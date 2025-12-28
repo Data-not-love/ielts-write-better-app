@@ -245,6 +245,13 @@ export function extractCommonIssues(
 }
 
 /**
+ * Helper function to pluralize essay/essays
+ */
+function pluralizeEssay(count: number): string {
+  return `${count} essay${count === 1 ? '' : 's'}`
+}
+
+/**
  * Extract actual recommendations from task feedback for weakest skills
  */
 function extractFeedbackRecommendations(
@@ -277,9 +284,10 @@ function extractFeedbackRecommendations(
     if (uniqueFeedback.length > 0) {
       // Take up to 3 most relevant pieces of feedback
       const topFeedback = uniqueFeedback.slice(0, 3)
+      const joinedFeedback = topFeedback.join(" ")
       recommendations.push({
         title: `Improve ${skill.label}`,
-        description: topFeedback.join(" ") + (topFeedback.join(" ").endsWith(".") ? "" : "."),
+        description: joinedFeedback + (joinedFeedback.endsWith(".") ? "" : "."),
         relatedCriterion: skill.name as "TR" | "CC" | "LR" | "GRA"
       })
     }
@@ -368,7 +376,7 @@ export function generatePersonalizedFeedback(
   if (tasks.length < 3) {
     recommendations.push({
       title: "Submit More Essays for Better Insights",
-      description: `With only ${tasks.length} essay${tasks.length === 1 ? '' : 's'} submitted, we need more data to provide personalized recommendations. Try writing 2-3 more essays to get detailed feedback patterns.`,
+      description: `With only ${pluralizeEssay(tasks.length)} submitted, we need more data to provide personalized recommendations. Try writing 2-3 more essays to get detailed feedback patterns.`,
       relatedCriterion: "Overall"
     })
   }
@@ -621,12 +629,13 @@ export function extractRepeatedSuggestions(
         // Skip very short feedback (less meaningful)
         if (normalized.length < 10) return
         
-        // Group similar suggestions using better matching
+        // Group similar suggestions using substring matching
+        // Check if there's significant overlap with existing suggestions
         let found = false
         suggestionMap.forEach((value, key) => {
-          // Match if 50% of the text overlaps (using first 50 chars for comparison)
           const keyPrefix = key.slice(0, 50)
           const normalizedPrefix = normalized.slice(0, 50)
+          // Match if there's substantial overlap in the first 30 characters
           if (keyPrefix.includes(normalizedPrefix.slice(0, 30)) || 
               normalizedPrefix.includes(keyPrefix.slice(0, 30))) {
             value.count++
