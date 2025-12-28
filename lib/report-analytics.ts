@@ -245,6 +245,58 @@ export function extractCommonIssues(
 }
 
 /**
+ * Helper function to pluralize essay/essays
+ */
+function pluralizeEssay(count: number): string {
+  return `${count} essay${count === 1 ? '' : 's'}`
+}
+
+/**
+ * Extract actual recommendations from task feedback for weakest skills
+ */
+function extractFeedbackRecommendations(
+  tasks: TaskDocument[],
+  criteriaScores: Array<{ name: string; score: number; label: string }>
+): Array<{ title: string; description: string; relatedCriterion: "TR" | "CC" | "LR" | "GRA" | "Overall" }> {
+  const recommendations: Array<{ title: string; description: string; relatedCriterion: "TR" | "CC" | "LR" | "GRA" | "Overall" }> = []
+  
+  // Focus on the weakest 2 skills
+  const weakSkills = criteriaScores.slice(-2)
+  
+  weakSkills.forEach(skill => {
+    // Collect suggestions and issues for this skill from all tasks
+    const skillFeedback: string[] = []
+    tasks.forEach(task => {
+      if (!task.feedback?.criteria) return
+      
+      const criterion = task.feedback.criteria[skill.name as CriterionKey]
+      if (criterion) {
+        const suggestions = criterion.suggestions || []
+        const issues = criterion.issues || []
+        skillFeedback.push(...suggestions, ...issues)
+      }
+    })
+    
+    // Get unique feedback items (deduplicate similar ones)
+    const uniqueFeedback = Array.from(new Set(skillFeedback))
+    
+    // Create a recommendation from the most common feedback
+    if (uniqueFeedback.length > 0) {
+      // Take up to 3 most relevant pieces of feedback
+      const topFeedback = uniqueFeedback.slice(0, 3)
+      const joinedFeedback = topFeedback.join(" ")
+      recommendations.push({
+        title: `Improve ${skill.label}`,
+        description: joinedFeedback + (joinedFeedback.endsWith(".") ? "" : "."),
+        relatedCriterion: skill.name as "TR" | "CC" | "LR" | "GRA"
+      })
+    }
+  })
+  
+  return recommendations
+}
+
+/**
  * Generate personalized feedback based on scores and trends
  */
 export function generatePersonalizedFeedback(
@@ -300,66 +352,31 @@ export function generatePersonalizedFeedback(
     weaknesses.push(`Increasing errors: ${worseningIssues[0].name}`)
   }
   
-  // Generate recommendations
+  // Generate recommendations based on actual feedback data
   const recommendations: PersonalizedFeedback["recommendations"] = []
   
-  // Recommendation for weakest criterion
-  const weakest = criteriaScores[3]
-  if (weakest.score < 7.0) {
-    const criterionRecommendations: Record<string, any> = {
-      TR: {
-        title: "Improve Task Response",
-        description: "Practice addressing all parts of the question directly. Read the prompt carefully and ensure your essay stays on topic throughout.",
-        relatedCriterion: "TR" as const
-      },
-      CC: {
-        title: "Enhance Coherence & Cohesion",
-        description: "Work on paragraph structure and use more varied linking words. Ensure each paragraph has a clear topic sentence and supporting ideas.",
-        relatedCriterion: "CC" as const
-      },
-      LR: {
-        title: "Expand Vocabulary Range",
-        description: "Build your lexical resource by learning topic-specific vocabulary. Practice paraphrasing and using collocations appropriately.",
-        relatedCriterion: "LR" as const
-      },
-      GRA: {
-        title: "Strengthen Grammar Accuracy",
-        description: "Review complex sentence structures and reduce grammatical errors. Practice using conditional sentences and passive voice correctly.",
-        relatedCriterion: "GRA" as const
-      }
-    }
-    recommendations.push(criterionRecommendations[weakest.name])
-  }
+  // Extract actual suggestions from user's feedback
+  const feedbackBasedRecommendations = extractFeedbackRecommendations(tasks, criteriaScores)
+  recommendations.push(...feedbackBasedRecommendations)
   
-  // Recommendation based on most common issue
+  // Add recommendations based on common issues (real data)
   if (commonIssues.length > 0) {
-    const topIssue = commonIssues[0].name.toLowerCase()
-    if (topIssue.includes("vocabulary")) {
-      recommendations.push({
-        title: "Address Vocabulary Range",
-        description: "Use the paraphrase tool to learn synonyms and practice using varied vocabulary in your essays.",
-        relatedCriterion: "LR"
-      })
-    } else if (topIssue.includes("grammar") || topIssue.includes("splice")) {
-      recommendations.push({
-        title: "Focus on Grammar Rules",
-        description: "Use the grammar checker tool regularly and review feedback carefully. Pay special attention to sentence structure.",
-        relatedCriterion: "GRA"
-      })
-    } else if (topIssue.includes("topic sentence") || topIssue.includes("coherence")) {
-      recommendations.push({
-        title: "Improve Essay Structure",
-        description: "Use the essay planner to organize your ideas before writing. Ensure each paragraph has a clear focus.",
-        relatedCriterion: "CC"
-      })
-    }
+    commonIssues.slice(0, 2).forEach(issue => {
+      if (issue.relatedCriterion) {
+        recommendations.push({
+          title: `Address: ${issue.name}`,
+          description: `This issue appeared ${issue.count} times in your feedback and is ${issue.trend.toLowerCase()}. Focus on this area in your next essays.`,
+          relatedCriterion: issue.relatedCriterion
+        })
+      }
+    })
   }
   
-  // General practice recommendation
-  if (tasks.length < 10) {
+  // Only suggest more practice if they have very few submissions
+  if (tasks.length < 3) {
     recommendations.push({
-      title: "Increase Practice Volume",
-      description: "Try to write at least 2-3 essays per week to build consistency and improve faster.",
+      title: "Submit More Essays for Better Insights",
+      description: `With only ${pluralizeEssay(tasks.length)} submitted, we need more data to provide personalized recommendations. Try writing 2-3 more essays to get detailed feedback patterns.`,
       relatedCriterion: "Overall"
     })
   }
@@ -609,10 +626,18 @@ export function extractRepeatedSuggestions(
         // Normalize the text for better matching
         const normalized = text.toLowerCase().trim()
         
-        // Group similar suggestions
+        // Skip very short feedback (less meaningful)
+        if (normalized.length < 10) return
+        
+        // Group similar suggestions using substring matching
+        // Check if there's significant overlap with existing suggestions
         let found = false
         suggestionMap.forEach((value, key) => {
-          if (key.includes(normalized.slice(0, 30)) || normalized.includes(key.slice(0, 30))) {
+          const keyPrefix = key.slice(0, 50)
+          const normalizedPrefix = normalized.slice(0, 50)
+          // Match if there's substantial overlap in the first 30 characters
+          if (keyPrefix.includes(normalizedPrefix.slice(0, 30)) || 
+              normalizedPrefix.includes(keyPrefix.slice(0, 30))) {
             value.count++
             found = true
           }
@@ -636,9 +661,10 @@ export function extractRepeatedSuggestions(
     }
   })
   
+  // Return top 10 suggestions (increased from 3) so dashboard can show more
   return suggestions
     .sort((a, b) => b.count - a.count)
-    .slice(0, 3)
+    .slice(0, 10)
 }
 
 /**
