@@ -23,7 +23,7 @@ export default function PrivacyPage() {
         <Card className="rounded-2xl border-border bg-card">
           <CardHeader>
             <CardTitle className="text-3xl">Privacy Policy</CardTitle>
-            <p className="text-sm text-muted-foreground mt-2">Last updated: December 29, 2025</p>
+            <p className="text-sm text-muted-foreground mt-2">Last updated: December 29, 2024</p>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <section className="mb-8">
