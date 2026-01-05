@@ -53,12 +53,11 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
         const taskData = await getTask(user.uid, taskId)
         if (!isMounted) return
         
-        const typedTask = taskData as TaskDocument | null
-        setTask(typedTask)
+        setTask(taskData as TaskDocument | null)
 
-        if (typedTask) {
+        if (taskData) {
           // Set original submission
-          const originalText = typedTask.response || "No submission found"
+          const originalText = taskData.response || "No submission found"
           
           // Update versions with original submission
           setVersions((prev) => {
@@ -68,15 +67,15 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
           })
 
           // Generate AI sample essay if prompt exists
-          if (typedTask.prompt) {
+          if (taskData.prompt) {
             setGeneratingAI(true)
             try {
               const response = await fetch("/api/essays/generate-sample", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  promptText: typedTask.prompt,
-                  taskType: typedTask.taskType || "Task 2",
+                  promptText: taskData.prompt,
+                  taskType: taskData.taskType || "Task 2",
                   targetBand: 7.0,
                 }),
               })
@@ -153,6 +152,10 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
   const getVersionText = (versionId: string) => {
     const version = versions.find((v) => v.id === versionId)
     return version?.text || ""
+  }
+
+  const getTextClassName = () => {
+    return `text-sm leading-relaxed ${wrapText ? "whitespace-pre-wrap" : "whitespace-pre overflow-x-auto"}`
   }
 
   if (authLoading || loadingTask) {
@@ -259,9 +262,7 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
                 <span className="text-sm text-muted-foreground">Generating AI sample essay...</span>
               </div>
             ) : (
-              <div
-                className={`text-sm leading-relaxed ${wrapText ? "whitespace-pre-wrap" : "whitespace-pre overflow-x-auto"}`}
-              >
+              <div className={getTextClassName()}>
                 {getVersionText(versionA)}
               </div>
             )}
@@ -279,9 +280,7 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
                 <span className="text-sm text-muted-foreground">Generating AI sample essay...</span>
               </div>
             ) : (
-              <div
-                className={`text-sm leading-relaxed ${wrapText ? "whitespace-pre-wrap" : "whitespace-pre overflow-x-auto"}`}
-              >
+              <div className={getTextClassName()}>
                 {getVersionText(versionB)}
               </div>
             )}

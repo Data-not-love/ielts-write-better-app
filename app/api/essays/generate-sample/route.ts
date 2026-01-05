@@ -91,8 +91,6 @@ Remember: Write ONLY the essay, no additional commentary.`
     const response = result.response
     const essayText = response.text()
 
-    console.log("[generate-sample] Generated essay:", essayText)
-
     return Response.json({ 
       essay: essayText.trim(),
       wordCount: essayText.trim().split(/\s+/).length
