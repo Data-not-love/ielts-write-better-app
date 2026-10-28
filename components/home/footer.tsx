@@ -109,8 +109,8 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 flex-shrink-0" />
-                <a href="mailto:sanhnv.23ai@vku.udn.vn" className="hover:text-foreground transition-colors">
-                  sanhnv.23ai@vku.udn.vn
+                <a href="mailto:cuongtd.23ai@vku.udn.vn" className="hover:text-foreground transition-colors">
+                  cuongtd.23ai@vku.udn.vn
                 </a>
               </div>
               <div className="pt-2">

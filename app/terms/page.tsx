@@ -115,7 +115,7 @@ export default function TermsPage() {
                 If you have any questions about these Terms of Service, please contact us at:
               </p>
               <ul className="list-none text-muted-foreground ml-0">
-                <li className="mb-2">Email: sanhnv.23ai@vku.udn.vn</li>
+                <li className="mb-2">Email: cuongtd.23ai@vku.udn.vn</li>
                 <li className="mb-2">Phone: 0376138772</li>
                 <li>Address: Trường đại học CNTT & TT Việt-Hàn, Khu Đô thị Đại học Đà Nẵng</li>
               </ul>
