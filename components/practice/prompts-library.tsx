@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from "sonner"
 import { authFetch } from "@/lib/auth-fetch"
 import { IELTS_TOPICS, tagsIncludeTopic } from "@/lib/ielts-topics"
+import { CATEGORY_GROUPS, categoriesForTask } from "@/lib/ielts-categories"
 
 type Prompt = {
   id: string
   type: "Task 1" | "Task 2"
+  category?: string
   title: string
   description: string
   tags: string[]
@@ -26,6 +28,7 @@ export function PromptsLibrary() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<string>("all")
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [previewPrompt, setPreviewPrompt] = useState<Prompt | null>(null)
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -44,6 +47,7 @@ export function PromptsLibrary() {
         body: JSON.stringify({
           taskType: activeTab === "all" ? null : activeTab,
           topics: selectedTopics.length > 0 ? selectedTopics : availableTopics,
+          categories: selectedCategories,
           count: 6,
         }),
       })
@@ -73,12 +77,32 @@ export function PromptsLibrary() {
     const matchesType = activeTab === "all" || prompt.type === activeTab
     const matchesTopics =
       selectedTopics.length === 0 || selectedTopics.some((topic) => tagsIncludeTopic(prompt.tags, topic))
-    return matchesType && matchesTopics
+    const matchesCategory =
+      selectedCategories.length === 0 || (!!prompt.category && selectedCategories.includes(prompt.category))
+    return matchesType && matchesTopics && matchesCategory
   })
 
   const toggleTopic = (topic: string) => {
     setSelectedTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))
   }
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]))
+  }
+
+  // Switching to a task tab drops categories from the other task, so the filter can't hide everything
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    const allowed: readonly string[] = categoriesForTask(tab)
+    setSelectedCategories((prev) => prev.filter((c) => allowed.includes(c)))
+  }
+
+  const clearOptions = () => {
+    setSelectedTopics([])
+    setSelectedCategories([])
+  }
+
+  const visibleCategoryGroups = CATEGORY_GROUPS.filter((g) => activeTab === "all" || g.task === activeTab)
 
   const handleUsePrompt = (prompt: Prompt) => {
     // Store the prompt in sessionStorage for use in the new task page
@@ -95,7 +119,7 @@ export function PromptsLibrary() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6" id="prompt-tabs" data-toc-title="Prompt Tabs">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6" id="prompt-tabs" data-toc-title="Prompt Tabs">
         <TabsList>
           <TabsTrigger value="all">All Prompts</TabsTrigger>
           <TabsTrigger value="Task 1">Task 1</TabsTrigger>
@@ -110,8 +134,8 @@ export function PromptsLibrary() {
             <CardTitle className="text-base">Select Topics</CardTitle>
             <div className="flex items-center gap-2">
             <Button
-              onClick={() => setSelectedTopics([])}
-              disabled={selectedTopics.length === 0}
+              onClick={clearOptions}
+              disabled={selectedTopics.length === 0 && selectedCategories.length === 0}
               size="sm"
               variant="outline"
               className="gap-2"
@@ -153,6 +177,36 @@ export function PromptsLibrary() {
               ? "All topics selected by default. Click to filter specific topics."
               : `${selectedTopics.length} topic(s) selected`}
           </p>
+
+          <div className="mt-6 border-t border-border pt-5" id="category-selection" data-toc-title="Category Selection">
+            <h3 className="text-base font-display font-semibold mb-3">Select Categories</h3>
+            <div className="space-y-3">
+              {visibleCategoryGroups.map((group) => (
+                <div key={`${group.task}-${group.label}`} className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-4">
+                  <p className="shrink-0 text-xs font-mono uppercase tracking-wider text-muted-foreground sm:w-60">
+                    {group.task} · {group.label}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.items.map((category) => (
+                      <Badge
+                        key={category}
+                        variant={selectedCategories.includes(category) ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => toggleCategory(category)}
+                      >
+                        {category}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground mt-3">
+              {selectedCategories.length === 0
+                ? "All question types allowed by default. Click to focus on specific types."
+                : `${selectedCategories.length} categor${selectedCategories.length === 1 ? "y" : "ies"} selected`}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -185,7 +239,10 @@ export function PromptsLibrary() {
             <Card key={prompt.id} className="rounded-2xl border-border bg-card">
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
-                  <Badge variant="outline">{prompt.type}</Badge>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">{prompt.type}</Badge>
+                    {prompt.category && <Badge variant="secondary">{prompt.category}</Badge>}
+                  </div>
                   <FileText className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-lg">{prompt.title}</CardTitle>
