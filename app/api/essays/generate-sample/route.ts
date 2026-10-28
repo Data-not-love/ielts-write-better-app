@@ -1,3 +1,5 @@
+import { guardAiRequest } from "@/lib/ai-guard"
+import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
 import { withRateLimit } from "@/lib/server-rate-limiter"
@@ -6,11 +8,20 @@ export const maxDuration = 60
 
 export async function POST(req: Request) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const { promptText, taskType, targetBand } = await req.json()
 
     if (!promptText || !taskType) {
       return Response.json({ error: "Missing required fields: promptText and taskType" }, { status: 400 })
     }
+
+    const invalid = validateTextFields({
+      promptText: [promptText, INPUT_LIMITS.prompt],
+      taskType: [taskType, INPUT_LIMITS.short],
+    })
+    if (invalid) return invalid
 
     const model = getGeminiModel()
 
@@ -98,7 +109,7 @@ Remember: Write ONLY the essay, no additional commentary.`
   } catch (error) {
     console.error("[generate-sample] Error:", error)
     return Response.json(
-      { error: error instanceof Error ? error.message : "Failed to generate sample essay" },
+      { error: "Failed to generate sample essay" },
       { status: 500 }
     )
   }

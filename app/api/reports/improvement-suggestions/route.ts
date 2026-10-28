@@ -1,3 +1,5 @@
+import { guardAiRequest } from "@/lib/ai-guard"
+import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { NextRequest } from "next/server"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
@@ -7,11 +9,21 @@ export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const { issueName, relatedCriterion, userLevel } = await req.json()
 
     if (!issueName) {
       return Response.json({ error: "Missing issueName" }, { status: 400 })
     }
+
+    const invalid = validateTextFields({
+      issueName: [issueName, INPUT_LIMITS.prompt],
+      relatedCriterion: [relatedCriterion, INPUT_LIMITS.short],
+      userLevel: [userLevel, INPUT_LIMITS.short],
+    })
+    if (invalid) return invalid
 
     const model = getGeminiModel()
 

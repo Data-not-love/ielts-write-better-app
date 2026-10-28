@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { authFetch } from "@/lib/auth-fetch"
 
 export function GrammarChecker() {
   const { toast } = useToast()
@@ -17,7 +18,7 @@ export function GrammarChecker() {
   const handleCheck = async () => {
     setIsChecking(true)
     try {
-      const response = await fetch("/api/ai/grammar-check", {
+      const response = await authFetch("/api/ai/grammar-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: input }),

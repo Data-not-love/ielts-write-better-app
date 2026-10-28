@@ -116,7 +116,7 @@ export function FloatingChatWidget() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/ai/chat", {
+      const response = await authFetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -183,7 +183,9 @@ export function FloatingChatWidget() {
       
       const responseMessage = isRateLimitError 
         ? "Xin lỗi, AI đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút."
-        : "Sorry, I encountered an error. Please try again."
+        : errorMessage.includes("đăng nhập")
+          ? errorMessage
+          : "Sorry, I encountered an error. Please try again."
       
       setMessages((prev) => [
         ...prev,
@@ -202,7 +204,7 @@ export function FloatingChatWidget() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/ai/chat", {
+      const response = await authFetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -267,7 +269,9 @@ export function FloatingChatWidget() {
       
       const responseMessage = isRateLimitError 
         ? "Xin lỗi, AI đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút."
-        : "Sorry, I encountered an error. Please try again."
+        : errorMessage.includes("đăng nhập")
+          ? errorMessage
+          : "Sorry, I encountered an error. Please try again."
       
       setMessages((prev) => [
         ...prev,

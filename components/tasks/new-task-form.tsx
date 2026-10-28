@@ -12,6 +12,7 @@ import { Loader2, Save, Send } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { createTask } from "@/lib/firebase-firestore"
 import type { TaskFeedback } from "@/types/tasks"
+import { authFetch } from "@/lib/auth-fetch"
 
 import {
   Dialog,
@@ -133,7 +134,7 @@ export function NewTaskForm() {
       }
 
       // Call the new essay evaluation API
-      const scoringResponse = await fetch("/api/essays/evaluate", {
+      const scoringResponse = await authFetch("/api/essays/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

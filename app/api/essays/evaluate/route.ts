@@ -1,17 +1,29 @@
+import { guardAiRequest } from "@/lib/ai-guard"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
 import { withRateLimit } from "@/lib/server-rate-limiter"
+import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import type { LineLevelFeedback, TaskFeedback } from "@/types/tasks"
 
 export const maxDuration = 60
 
 export async function POST(req: Request) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const { promptText, taskType, essayText, userId, promptId } = await req.json()
 
     if (!essayText || !taskType) {
       return Response.json({ error: "Missing required fields: essayText and taskType" }, { status: 400 })
     }
+
+    const invalid = validateTextFields({
+      essayText: [essayText, INPUT_LIMITS.essay],
+      taskType: [taskType, INPUT_LIMITS.short],
+      promptText: [promptText, INPUT_LIMITS.prompt],
+    })
+    if (invalid) return invalid
 
     const model = getGeminiModel()
 
@@ -191,7 +203,7 @@ Provide a comprehensive IELTS evaluation following the JSON structure specified.
     }
     
     return Response.json({ 
-      error: error instanceof Error ? error.message : "Không thể chấm điểm bài viết. Vui lòng kiểm tra kết nối và thử lại.",
+      error: "Không thể chấm điểm bài viết. Vui lòng kiểm tra kết nối và thử lại.",
       errorType: "GENERIC"
     }, { status: 500 })
   }

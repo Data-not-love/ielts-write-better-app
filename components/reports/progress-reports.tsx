@@ -115,7 +115,7 @@ export function ProgressReports({ userId: propUserId }: ProgressReportsProps = {
     setImprovementSuggestions(null)
 
     try {
-      const response = await fetch("/api/reports/improvement-suggestions", {
+      const response = await authFetch("/api/reports/improvement-suggestions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Sparkles, Copy, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { authFetch } from "@/lib/auth-fetch"
 
 export function ParaphraseTool() {
   const { toast } = useToast()
@@ -18,7 +19,7 @@ export function ParaphraseTool() {
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
-      const response = await fetch("/api/ai/paraphrase", {
+      const response = await authFetch("/api/ai/paraphrase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: input }),

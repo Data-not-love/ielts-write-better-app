@@ -1,3 +1,5 @@
+import { guardAiRequest } from "@/lib/ai-guard"
+import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { generateObject } from "ai"
 import { getGoogleModel } from "@/lib/ai"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
@@ -16,11 +18,22 @@ const improvementSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const { sentence, context, category, currentIssue } = await req.json()
 
     if (!sentence) {
       return Response.json({ error: "Sentence is required" }, { status: 400 })
     }
+
+    const invalid = validateTextFields({
+      sentence: [sentence, INPUT_LIMITS.prompt],
+      context: [context, INPUT_LIMITS.essay],
+      category: [category, INPUT_LIMITS.short],
+      currentIssue: [currentIssue, INPUT_LIMITS.prompt],
+    })
+    if (invalid) return invalid
 
     // Build a detailed prompt based on the category and current issue
     const categoryDescriptions: Record<string, string> = {

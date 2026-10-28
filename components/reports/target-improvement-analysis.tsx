@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2, AlertCircle, TrendingUp, FileText, ChevronDown, ChevronUp } from "lucide-react"
 import { Markdown } from "@/components/ui/markdown"
 import type { RecentSubmission } from "@/types/reports"
+import { authFetch } from "@/lib/auth-fetch"
 
 const CRITERIA_NAMES = {
   TR: "Task Response",
@@ -51,7 +52,7 @@ export function TargetImprovementAnalysis({
       const results: ImprovementAnalysis[] = []
       
       for (const submission of submissionsToAnalyze) {
-        const response = await fetch("/api/reports/analyze-submission-gap", {
+        const response = await authFetch("/api/reports/analyze-submission-gap", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

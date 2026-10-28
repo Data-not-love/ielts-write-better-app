@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { getTask } from "@/lib/firebase-firestore"
 import type { TaskDocument } from "@/types/tasks"
 import { useToast } from "@/hooks/use-toast"
+import { authFetch } from "@/lib/auth-fetch"
 
 interface CompareVersionsProps {
   taskId: string
@@ -70,7 +71,7 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
           if (taskData.prompt) {
             setGeneratingAI(true)
             try {
-              const response = await fetch("/api/essays/generate-sample", {
+              const response = await authFetch("/api/essays/generate-sample", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

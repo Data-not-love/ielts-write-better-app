@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Sparkles, Send } from "lucide-react"
+import { authFetch } from "@/lib/auth-fetch"
 
 export function EssayPlanner() {
   const { toast } = useToast()
@@ -19,7 +20,7 @@ export function EssayPlanner() {
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
-      const response = await fetch("/api/ai/generate-outline", {
+      const response = await authFetch("/api/ai/generate-outline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic, targetBand }),

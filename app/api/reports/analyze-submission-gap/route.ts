@@ -1,3 +1,5 @@
+import { guardAiRequest } from "@/lib/ai-guard"
+import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { NextRequest } from "next/server"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
@@ -11,6 +13,9 @@ export const maxDuration = 60
  */
 export async function POST(req: NextRequest) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const { 
       submissionId,
       submissionTitle,
@@ -25,6 +30,13 @@ export async function POST(req: NextRequest) {
         error: "Missing required fields: submissionId, weakestSkill, currentScore, targetScore" 
       }, { status: 400 })
     }
+
+    const invalid = validateTextFields({
+      submissionTitle: [submissionTitle, INPUT_LIMITS.short],
+      weakestSkill: [weakestSkill, INPUT_LIMITS.short],
+      keySuggestion: [keySuggestion, INPUT_LIMITS.prompt],
+    })
+    if (invalid) return invalid
 
     const gap = targetScore - currentScore
 

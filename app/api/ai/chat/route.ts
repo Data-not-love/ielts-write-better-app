@@ -1,12 +1,17 @@
+import { guardAiRequest } from "@/lib/ai-guard"
 import { NextResponse } from "next/server"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
 import { withRateLimit } from "@/lib/server-rate-limiter"
+import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 
 export const maxDuration = 60
 
 export async function POST(req: Request) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const json = await req.json().catch(() => null)
     if (!json) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
@@ -23,6 +28,20 @@ export async function POST(req: Request) {
       role: m.role === "user" || m.role === "assistant" ? m.role : "user",
       content: typeof m.content === "string" ? m.content : String(m.content ?? ""),
     }))
+
+    const totalChars = normalizedMessages.reduce((sum, m) => sum + m.content.length, 0)
+    if (normalizedMessages.length > INPUT_LIMITS.chatMessages || totalChars > INPUT_LIMITS.chatTotal) {
+      return NextResponse.json({ error: "Conversation is too long. Please start a new chat." }, { status: 413 })
+    }
+
+    const invalid = validateTextFields({
+      tone: [tone, INPUT_LIMITS.short],
+      level: [level, INPUT_LIMITS.short],
+      model: [model, INPUT_LIMITS.short],
+      "attachedTask.prompt": [attachedTask?.prompt, INPUT_LIMITS.prompt],
+      "attachedTask.essay": [attachedTask?.essay, INPUT_LIMITS.essay],
+    })
+    if (invalid) return invalid
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Missing GEMINI_API_KEY in environment" }, { status: 500 })

@@ -1,3 +1,4 @@
+import { guardAiRequest } from "@/lib/ai-guard"
 import { generateObject } from "ai"
 import { getGoogleModel } from "@/lib/ai"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
@@ -20,10 +21,16 @@ const promptSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const { taskType, topics, count } = await req.json()
 
-    const promptCount = count || 4
-    const selectedTopics = topics && topics.length > 0 ? topics : ["general"]
+    const promptCount = Math.min(Math.max(Number(count) || 4, 1), 10)
+    const cleanTopics = Array.isArray(topics)
+      ? topics.filter((t): t is string => typeof t === "string" && t.length <= 50).slice(0, 15)
+      : []
+    const selectedTopics = cleanTopics.length > 0 ? cleanTopics : ["general"]
     const selectedTaskType = taskType || "all"
 
     // Check if API key is available - never fall back to fake prompts

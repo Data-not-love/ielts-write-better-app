@@ -1,3 +1,5 @@
+import { guardAiRequest } from "@/lib/ai-guard"
+import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { generateObject } from "ai"
 import { getGoogleModel } from "@/lib/ai"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
@@ -32,11 +34,17 @@ const outlineSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const denied = await guardAiRequest(req)
+    if (denied) return denied
+
     const { topic, targetBand } = await req.json()
 
     if (!topic) {
       return Response.json({ error: "Topic is required" }, { status: 400 })
     }
+
+    const invalid = validateTextFields({ topic: [topic, INPUT_LIMITS.prompt] })
+    if (invalid) return invalid
 
     // Use server-side rate limiting to prevent quota exhaustion
     const { object } = await withRateLimit(() =>

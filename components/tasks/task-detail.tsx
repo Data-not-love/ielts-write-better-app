@@ -14,6 +14,7 @@ import type { CriterionKey, TaskDocument, TaskFeedback, LineLevelFeedback } from
 import { EmptyState } from "@/components/ui/empty-state"
 import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
+import { authFetch } from "@/lib/auth-fetch"
 import {
   Collapsible,
   CollapsibleContent,
@@ -90,7 +91,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     
     setIsRevaluating(true)
     try {
-      const response = await fetch("/api/essays/evaluate", {
+      const response = await authFetch("/api/essays/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -145,7 +146,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     try {
       const sentence = response.substring(feedbackItem.startIndex, feedbackItem.endIndex)
       
-      const res = await fetch("/api/essays/improve-sentence", {
+      const res = await authFetch("/api/essays/improve-sentence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

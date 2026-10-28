@@ -3,3 +3,8 @@ onlyBuiltDependencies:
   - '@tailwindcss/oxide'
   - protobufjs
   - sharp
+
+# Force patched versions of vulnerable transitive deps pulled in by firebase
+overrides:
+  protobufjs: ^7.5.5
+  '@grpc/grpc-js': ^1.13.6

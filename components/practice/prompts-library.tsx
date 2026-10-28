@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileText, Eye, Sparkles, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { authFetch } from "@/lib/auth-fetch"
 
 type Prompt = {
   id: string
@@ -47,7 +48,7 @@ export function PromptsLibrary() {
   const generatePrompts = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch("/api/ai/generate-prompts", {
+      const response = await authFetch("/api/ai/generate-prompts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
