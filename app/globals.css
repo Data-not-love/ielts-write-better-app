@@ -135,4 +135,15 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Hide the page's scrollbars while keeping wheel/touch/keyboard scrolling */
+  html,
+  body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
 }
