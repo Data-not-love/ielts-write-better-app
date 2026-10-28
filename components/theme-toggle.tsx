@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -66,8 +65,7 @@ export function ThemeToggle() {
           {isDark && <Check className="ml-auto h-4 w-4" />}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Màu nhấn</DropdownMenuLabel>
-        <div className="flex items-center gap-2 px-2 pb-2" role="radiogroup" aria-label="Màu nhấn">
+        <div className="flex items-center gap-2 px-2 py-2" role="radiogroup" aria-label="Màu nhấn">
           {ACCENTS.map((a) => (
             <button
               key={a.id}
