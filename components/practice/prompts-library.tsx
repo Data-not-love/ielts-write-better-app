@@ -183,7 +183,7 @@ export function PromptsLibrary() {
             <div className="space-y-3">
               {visibleCategoryGroups.map((group) => (
                 <div key={`${group.task}-${group.label}`} className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-4">
-                  <p className="shrink-0 text-xs font-mono uppercase tracking-wider text-muted-foreground sm:w-60">
+                  <p className="shrink-0 text-sm font-medium text-muted-foreground sm:w-56">
                     {group.task} · {group.label}
                   </p>
                   <div className="flex flex-wrap gap-2">
