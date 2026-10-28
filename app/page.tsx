@@ -1,85 +1,62 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TopNav } from "@/components/navigation/top-nav"
-import { Target, GitCompare, TrendingUp, Sparkles } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { DemoSection } from "@/components/home/demo-section"
 import { Footer } from "@/components/home/footer"
+
+const criteria = [
+  { code: "TR", name: "Task Response", note: "Bạn có trả lời đúng và đủ đề bài không" },
+  { code: "CC", name: "Coherence & Cohesion", note: "Đoạn văn, liên kết, mạch lập luận" },
+  { code: "LR", name: "Lexical Resource", note: "Độ rộng và độ chính xác của từ vựng" },
+  { code: "GRA", name: "Grammatical Range & Accuracy", note: "Cấu trúc câu đa dạng, ít lỗi" },
+]
 
 export default function HomePage() {
   return (
     <div className="min-h-screen">
       <TopNav />
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 md:py-32">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-balance">Level up your IELTS Writing.</h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 text-balance">
-            AI feedback aligned to TR / CC / LR / GRA. Improve faster with targeted suggestions.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <Link href="/tasks/new">
-              <Button size="lg" className="text-lg px-8">
-                Start a Task
-              </Button>
-            </Link>
-            <Link href="/chat">
-              <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent">
-                Try the Chatbot
-              </Button>
-            </Link>
+      {/* Intro */}
+      <section className="container mx-auto px-4 pt-16 pb-12 md:pt-24">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-end">
+          <div className="max-w-2xl">
+            <p className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              IELTS Writing · Task 1 &amp; Task 2
+            </p>
+            <h1 className="mb-6 text-4xl leading-[1.08] md:text-6xl text-balance">
+              Viết bài, nhận band điểm như một giám khảo chấm.
+            </h1>
+            <p className="mb-8 max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty">
+              Mỗi bài được chấm theo bốn tiêu chí chính thức, kèm nhận xét từng câu và bản viết lại để bạn sửa ngay ở bản
+              nháp sau.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/tasks/new">
+                <Button size="lg" className="px-6">
+                  Viết bài đầu tiên
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/chat">
+                <Button size="lg" variant="ghost" className="px-4">
+                  Hỏi trợ lý viết
+                </Button>
+              </Link>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">Free plan available. No credit card required.</p>
-        </div>
-      </section>
 
-      {/* Feature Grid */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="rounded-2xl border-border bg-card">
-            <CardHeader>
-              <Target className="h-10 w-10 text-primary mb-4" />
-              <CardTitle className="text-xl">Band-aligned scoring</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base leading-relaxed">
-                Task 1 & Task 2 with TR/CC/LR/GRA breakdown
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-border bg-card">
-            <CardHeader>
-              <Sparkles className="h-10 w-10 text-accent mb-4" />
-              <CardTitle className="text-xl">Actionable feedback</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base leading-relaxed">Concrete rewrites and examples</CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-border bg-card">
-            <CardHeader>
-              <GitCompare className="h-10 w-10 text-chart-3 mb-4" />
-              <CardTitle className="text-xl">Version compare</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base leading-relaxed">
-                See diffs between drafts and AI suggestions
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-border bg-card">
-            <CardHeader>
-              <TrendingUp className="h-10 w-10 text-chart-5 mb-4" />
-              <CardTitle className="text-xl">Progress reports</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base leading-relaxed">Track improvement over time</CardDescription>
-            </CardContent>
-          </Card>
+          <dl className="border-t border-foreground/80">
+            {criteria.map((c) => (
+              <div key={c.code} className="grid grid-cols-[3.5rem_1fr] gap-x-4 border-b border-border py-4">
+                <dt className="font-mono text-sm font-medium text-primary tabular-nums">{c.code}</dt>
+                <dd>
+                  <p className="font-medium">{c.name}</p>
+                  <p className="text-sm text-muted-foreground">{c.note}</p>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 

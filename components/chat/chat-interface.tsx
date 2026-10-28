@@ -349,9 +349,9 @@ export function ChatInterface() {
                     </div>
                     <div className="rounded-2xl px-4 py-3 bg-muted">
                       <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" />
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.2s]" />
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.4s]" />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-typing" />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-typing [animation-delay:0.2s]" />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-typing [animation-delay:0.4s]" />
                       </div>
                     </div>
                   </div>

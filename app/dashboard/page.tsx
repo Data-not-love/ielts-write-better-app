@@ -384,27 +384,27 @@ export default function DashboardPage() {
 
           {/* Key Recommendations - Eye-catching section */}
           {reportData && !reportLoading && reportData.targetBasedRecommendations && reportData.targetBasedRecommendations.repeatedSuggestions.length > 0 && (
-            <Card className="rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent mb-8" id="key-recommendations" data-toc-title="Key Recommendations">
+            <Card className="rounded-2xl border border-border shadow-none mb-8" id="key-recommendations" data-toc-title="Key Recommendations">
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Lightbulb className="h-6 w-6 text-primary" />
-                  <CardTitle className="text-2xl">Focus on These to Improve Fast!</CardTitle>
+                  <CardTitle className="text-2xl">Focus on these first</CardTitle>
                 </div>
                 <CardDescription className="text-base">
-                  Top issues holding you back - tackle these first for maximum impact
+                  The issues that come up most often in your feedback
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 border-t border-border">
                   {reportData.targetBasedRecommendations.repeatedSuggestions.slice(0, 4).map((suggestion, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="p-4 rounded-xl bg-card border-2 border-border hover:border-primary/50 transition-all hover:shadow-lg cursor-pointer"
+                      className="py-4 md:px-4 border-b border-border hover:bg-muted/60 transition-colors cursor-pointer"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary font-bold">{index + 1}</span>
+                        <div className="flex-shrink-0 w-6 pt-0.5">
+                          <span className="font-mono text-sm text-primary tabular-nums">{String(index + 1).padStart(2, "0")}</span>
                         </div>
                         <div className="flex-1">
                           <Badge variant="outline" className="mb-2">
@@ -422,11 +422,10 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 p-4 rounded-lg bg-primary/10 border border-primary/20">
-                  <p className="text-sm font-medium text-center">
-                    💡 <strong>Pro Tip:</strong> Focus on fixing these issues in your next 2-3 essays to see rapid improvement!
-                  </p>
-                </div>
+                <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+                  <Lightbulb className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
+                  <span>Work on these in your next two or three essays, then check whether the count drops.</span>
+                </p>
               </CardContent>
             </Card>
           )}
@@ -573,7 +572,10 @@ export default function DashboardPage() {
                 {/* Task Type Recommendations */}
                 {reportData.targetBasedRecommendations.studyPlan.taskTypeRecommendations.length > 0 && (
                   <div className="mt-6 p-4 rounded-lg bg-accent/10 border border-accent/20">
-                    <h3 className="font-semibold mb-3">📝 What to Practice</h3>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <PenLine className="h-4 w-4 text-accent" />
+                      What to practice
+                    </h3>
                     <ul className="space-y-2">
                       {reportData.targetBasedRecommendations.studyPlan.taskTypeRecommendations.map((rec, index) => (
                         <li key={index} className="text-sm flex items-start gap-2">

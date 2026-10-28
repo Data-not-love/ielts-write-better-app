@@ -538,16 +538,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                     {task.feedback.lineLevelFeedback.map((feedback, index) => {
                       const excerpt = task.response?.substring(feedback.startIndex, feedback.endIndex) || ""
                       const categoryColors = {
-                        grammar: "border-red-500 bg-red-50 dark:bg-red-950",
-                        lexical: "border-yellow-500 bg-yellow-50 dark:bg-yellow-950",
-                        coherence: "border-blue-500 bg-blue-50 dark:bg-blue-950",
-                        task_response: "border-purple-500 bg-purple-50 dark:bg-purple-950",
+                        grammar: "border-red-300 bg-red-50/60 dark:border-red-900 dark:bg-red-950/30",
+                        lexical: "border-yellow-300 bg-yellow-50/60 dark:border-yellow-900 dark:bg-yellow-950/30",
+                        coherence: "border-blue-300 bg-blue-50/60 dark:border-blue-900 dark:bg-blue-950/30",
+                        task_response: "border-purple-300 bg-purple-50/60 dark:border-purple-900 dark:bg-purple-950/30",
                       }
                       
                       return (
                         <div
                           key={index}
-                          className={`p-3 rounded-lg border-l-4 ${categoryColors[feedback.category]} cursor-pointer hover:shadow-md transition-shadow`}
+                          className={`p-3 rounded-md border ${categoryColors[feedback.category]} cursor-pointer hover:border-foreground/30 transition-colors`}
                           onClick={() => setHighlightedFeedback(feedback)}
                           onMouseEnter={() => setHighlightedFeedback(feedback)}
                           onMouseLeave={() => setHighlightedFeedback(null)}
@@ -660,10 +660,10 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                                   const excerpt = task.response?.substring(feedback.startIndex, feedback.endIndex) || ""
                                   
                                   const categoryColors = {
-                                    grammar: "border-red-500 bg-red-50 dark:bg-red-950/30",
-                                    lexical: "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30",
-                                    coherence: "border-blue-500 bg-blue-50 dark:bg-blue-950/30",
-                                    task_response: "border-purple-500 bg-purple-50 dark:bg-purple-950/30",
+                                    grammar: "border-red-300 bg-red-50/60 dark:border-red-900 dark:bg-red-950/30",
+                                    lexical: "border-yellow-300 bg-yellow-50/60 dark:border-yellow-900 dark:bg-yellow-950/30",
+                                    coherence: "border-blue-300 bg-blue-50/60 dark:border-blue-900 dark:bg-blue-950/30",
+                                    task_response: "border-purple-300 bg-purple-50/60 dark:border-purple-900 dark:bg-purple-950/30",
                                   }
                                   
                                   const categoryLabels = {
@@ -676,7 +676,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                                   return (
                                     <div
                                       key={fbIndex}
-                                      className={`p-3 rounded-lg border-l-4 ${categoryColors[feedback.category]} space-y-2`}
+                                      className={`p-3 rounded-md border ${categoryColors[feedback.category]} space-y-2`}
                                     >
                                       <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1">

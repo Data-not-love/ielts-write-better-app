@@ -1,0 +1,25 @@
+{
+  "entries": [
+    {
+      "date": "2026-10-28",
+      "verb": "redesign",
+      "scope": "multi-page (visual layer only, no logic changes)",
+      "genre": "editorial / marked exam paper",
+      "macrostructure": { "marketing": "workbench", "app": "flattened existing", "content": "long-document" },
+      "fonts": { "display": "Source Serif 4", "body": "Be Vietnam Pro", "mono": "Geist Mono" },
+      "files": [
+        "app/globals.css",
+        "app/layout.tsx",
+        "app/page.tsx",
+        "components/home/demo-section.tsx",
+        "components/home/footer.tsx",
+        "components/navigation/top-nav.tsx",
+        "app/dashboard/page.tsx",
+        "components/tasks/task-detail.tsx",
+        "components/chat/chat-interface.tsx",
+        "components/chat/floating-chat-widget.tsx",
+        "components/reports/target-improvement-analysis.tsx"
+      ]
+    }
+  ]
+}

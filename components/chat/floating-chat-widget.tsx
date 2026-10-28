@@ -292,7 +292,7 @@ export function FloatingChatWidget() {
         onClick={() => setIsOpen(!isOpen)}
         size="icon-lg"
         className={cn(
-          "fixed bottom-6 right-6 z-50 rounded-full shadow-lg transition-all hover:scale-110",
+          "fixed bottom-6 right-6 z-50 rounded-full shadow-md transition-colors",
           isOpen && "hidden"
         )}
         aria-label="Open chat"
@@ -367,9 +367,9 @@ export function FloatingChatWidget() {
                     </div>
                     <div className="rounded-lg px-3 py-2 bg-muted">
                       <div className="flex gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.2s]" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.4s]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-typing" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-typing [animation-delay:0.2s]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-typing [animation-delay:0.4s]" />
                       </div>
                     </div>
                   </div>

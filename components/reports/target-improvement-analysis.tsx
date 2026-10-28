@@ -241,7 +241,7 @@ export function TargetImprovementAnalysis({
         {/* Call to Action */}
         <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
           <p className="text-sm text-muted-foreground">
-            💡 <strong>Pro tip:</strong> Focus on addressing these issues in your next practice essays. 
+<strong>Next step:</strong> Focus on addressing these issues in your next practice essays. 
             Consistent practice with these improvements will help you reach your target faster.
           </p>
         </div>

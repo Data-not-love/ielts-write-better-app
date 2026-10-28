@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Loader2, AlertCircle } from "lucide-react"
 
 const sampleEssay = `Some people believe that technology has made our lives more complex, while others think it has simplified them. In my opinion, while technology has introduced certain complexities, it has overall made our lives significantly easier.
@@ -58,86 +57,89 @@ export function DemoSection() {
   }
 
   return (
-    <section className="container mx-auto px-4 py-16">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">See it in action</h2>
-          <p className="text-lg text-muted-foreground">Try our AI scoring with a sample essay</p>
+    <section className="container mx-auto px-4 py-12">
+      <div>
+        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2 border-t border-foreground/80 pt-4">
+          <h2 className="text-2xl md:text-3xl">Chấm thử một bài Task 2</h2>
+          <p className="text-sm text-muted-foreground">Bài mẫu có sẵn, bạn có thể sửa trước khi chấm</p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card className="rounded-2xl border-border bg-card">
+        <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-6">
+          <Card className="rounded-md border-border bg-card shadow-none">
             <CardHeader>
-              <CardTitle>Your Essay</CardTitle>
+              <CardTitle>Bài viết</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                className="min-h-[300px] font-mono text-sm"
-                placeholder="Paste your essay here..."
+                className="min-h-[340px] text-[0.95rem] leading-7"
+                placeholder="Dán bài viết của bạn vào đây…"
               />
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{text.split(" ").length} words</p>
+                <p className="font-mono text-sm text-muted-foreground tabular-nums">{text.split(" ").length} từ</p>
                 <Button onClick={handleRunDemo} disabled={isScoring || !text}>
                   {isScoring ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing...
+                      Đang chấm…
                     </>
                   ) : (
-                    "Run Demo Scoring"
+                    "Chấm bài"
                   )}
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border-border bg-card">
+          <Card className="rounded-md border-border bg-card shadow-none">
             <CardHeader>
-              <CardTitle>AI Feedback</CardTitle>
+              <CardTitle>Nhận xét</CardTitle>
             </CardHeader>
             <CardContent>
               {error ? (
-                <div className="rounded-lg border border-red-500 bg-red-50 dark:bg-red-950 p-4 mb-4">
+                <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 mb-4">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+                      <p className="text-sm text-foreground">{error}</p>
                     </div>
                   </div>
                 </div>
               ) : null}
-              
+
               {!feedback && !error ? (
-                <div className="flex items-center justify-center min-h-[300px] text-muted-foreground">
-                  Click "Run Demo Scoring" to see AI feedback
+                <div className="flex min-h-[300px] flex-col justify-center gap-2 text-muted-foreground">
+                  <p className="font-display text-5xl text-muted-foreground/30">–.–</p>
+                  <p className="text-sm">Bấm “Chấm bài” để xem band điểm và nhận xét theo từng tiêu chí.</p>
                 </div>
               ) : null}
-              
+
               {feedback ? (
                 <div className="space-y-6">
-                  <div className="text-center py-6 border-b border-border">
-                    <div className="text-5xl font-bold text-primary mb-2">{feedback.overallBand.toFixed(1)}</div>
-                    <p className="text-sm text-muted-foreground">Overall Band Estimate</p>
+                  <div className="flex items-end justify-between border-b border-border pb-6">
+                    <p className="text-sm text-muted-foreground">Band ước tính</p>
+                    <div className="font-display text-6xl font-semibold leading-none text-primary tabular-nums">
+                      {feedback.overallBand.toFixed(1)}
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="divide-y divide-border [&>div]:py-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Task Response (TR)</span>
-                      <Badge variant="default">{feedback.criteria.TR.score.toFixed(1)}</Badge>
+                      <span className="font-mono text-sm font-medium tabular-nums">{feedback.criteria.TR.score.toFixed(1)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Coherence & Cohesion (CC)</span>
-                      <Badge variant="default">{feedback.criteria.CC.score.toFixed(1)}</Badge>
+                      <span className="font-mono text-sm font-medium tabular-nums">{feedback.criteria.CC.score.toFixed(1)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Lexical Resource (LR)</span>
-                      <Badge variant="default">{feedback.criteria.LR.score.toFixed(1)}</Badge>
+                      <span className="font-mono text-sm font-medium tabular-nums">{feedback.criteria.LR.score.toFixed(1)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Grammar & Accuracy (GRA)</span>
-                      <Badge variant="default">{feedback.criteria.GRA.score.toFixed(1)}</Badge>
+                      <span className="font-mono text-sm font-medium tabular-nums">{feedback.criteria.GRA.score.toFixed(1)}</span>
                     </div>
                   </div>
 

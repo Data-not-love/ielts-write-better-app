@@ -42,33 +42,19 @@ export function TopNav() {
   }
 
   return (
-    <nav className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+    <nav className="border-b border-border bg-background sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <PenLine className="h-6 w-6 text-primary" />
-            <span className="text-foreground">IELTS WriteBetter</span>
+          <Link href="/" className="flex items-center gap-2 min-w-0">
+            <PenLine className="h-5 w-5 shrink-0 text-primary" />
+            <span className="font-display text-base sm:text-lg font-semibold tracking-tight text-foreground whitespace-nowrap">
+              <span className="sm:hidden">WriteBetter</span>
+              <span className="hidden sm:inline">IELTS WriteBetter</span>
+            </span>
           </Link>
-
-          {!user && (
-            <div className="hidden md:flex items-center gap-6">
-              <Link href="/#samples" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Samples
-              </Link>
-              <Link href="/#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
-              </Link>
-              <Link href="/#about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </Link>
-              <Link href="/#contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </Link>
-            </div>
-          )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1 sm:gap-3">
           <ThemeToggle />
           {loading ? (
             <div className="h-8 w-20 bg-muted animate-pulse rounded" />
@@ -119,12 +105,12 @@ export function TopNav() {
           ) : (
             <>
               <Link href="/auth/login">
-                <Button variant="ghost" size="sm">
-                  Sign In
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                  Đăng nhập
                 </Button>
               </Link>
               <Link href="/auth/register">
-                <Button size="sm">Get Started</Button>
+                <Button size="sm" className="px-2.5 sm:px-3">Tạo tài khoản</Button>
               </Link>
             </>
           )}
