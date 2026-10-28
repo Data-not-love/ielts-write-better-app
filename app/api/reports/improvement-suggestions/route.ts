@@ -59,8 +59,7 @@ Format your response in a clear, structured way that's easy to understand and ap
     console.error("[improvement-suggestions] Error:", error)
     return Response.json(
       { 
-        error: error instanceof Error ? error.message : "Failed to generate improvement suggestions",
-        details: error instanceof Error ? error.stack : undefined
+        error: "Failed to generate improvement suggestions"
       },
       { status: 500 }
     )

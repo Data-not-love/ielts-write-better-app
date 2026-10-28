@@ -111,8 +111,7 @@ Suggest one specific exercise or technique the student can use immediately to pr
     console.error("[analyze-submission-gap] Error:", error)
     return Response.json(
       { 
-        error: error instanceof Error ? error.message : "Failed to analyze submission gap",
-        details: error instanceof Error ? error.stack : undefined
+        error: "Failed to analyze submission gap"
       },
       { status: 500 }
     )

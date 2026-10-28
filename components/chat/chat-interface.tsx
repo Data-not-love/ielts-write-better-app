@@ -3,6 +3,7 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { authFetch } from "@/lib/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -86,7 +87,7 @@ export function ChatInterface() {
 
       setLoadingEssays(true)
       try {
-        const response = await fetch(`/api/essays/scored?userId=${user.uid}`)
+        const response = await authFetch("/api/essays/scored")
         if (!response.ok) {
           throw new Error("Failed to fetch scored essays")
         }

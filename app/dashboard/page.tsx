@@ -5,6 +5,7 @@ import Link from "next/link"
 import { FileText, Flame, PenLine, MessageSquare, TrendingUp, Target, Loader2, BookOpen, Lightbulb, AlertCircle } from "lucide-react"
 
 import { TopNav } from "@/components/navigation/top-nav"
+import { authFetch } from "@/lib/auth-fetch"
 import { SecondaryNav } from "@/components/navigation/secondary-nav"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -164,7 +165,7 @@ export default function DashboardPage() {
     
     async function fetchTarget() {
       try {
-        const response = await fetch(`/api/reports/target?userId=${user.uid}`)
+        const response = await authFetch("/api/reports/target")
         if (response.ok) {
           const data = await response.json()
           setUserTarget(data.target)
@@ -184,7 +185,7 @@ export default function DashboardPage() {
     async function fetchReportData() {
       setReportLoading(true)
       try {
-        const response = await fetch("/api/reports/progress", {
+        const response = await authFetch("/api/reports/progress", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

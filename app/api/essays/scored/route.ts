@@ -1,23 +1,18 @@
 import { NextRequest } from "next/server"
-import { collection, query, where, getDocs } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { getAdminDb, requireUserId, UnauthorizedError, unauthorizedResponse } from "@/lib/firebase-admin"
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get("userId")
-    
-    if (!userId) {
-      return Response.json({ error: "User ID is required" }, { status: 400 })
-    }
+    const userId = await requireUserId(req)
 
     // Query for scored tasks only (without orderBy to avoid composite index requirement)
-    const tasksRef = collection(db, "users", userId, "tasks")
-    const q = query(
-      tasksRef,
-      where("status", "==", "scored")
-    )
-    
-    const snapshot = await getDocs(q)
+    const snapshot = await getAdminDb()
+      .collection("users")
+      .doc(userId)
+      .collection("tasks")
+      .where("status", "==", "scored")
+      .get()
+
     const scoredEssays = snapshot.docs.map((doc) => {
       const data = doc.data()
       return {
@@ -41,6 +36,7 @@ export async function GET(req: NextRequest) {
 
     return Response.json({ essays: scoredEssays })
   } catch (error) {
+    if (error instanceof UnauthorizedError) return unauthorizedResponse()
     console.error("[scored-essays] Error fetching scored essays:", error)
     return Response.json(
       { error: "Failed to fetch scored essays" },

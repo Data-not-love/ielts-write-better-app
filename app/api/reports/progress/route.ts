@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { getTasks } from "@/lib/firebase-firestore"
+import { getAdminDb, requireUserId, UnauthorizedError, unauthorizedResponse } from "@/lib/firebase-admin"
 import type { TaskDocument } from "@/types/tasks"
 import type { ProgressReportData } from "@/types/reports"
 import {
@@ -22,18 +22,22 @@ export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, dateRange, taskType, targetBand } = await req.json()
-
-    if (!userId) {
-      return Response.json({ error: "Missing userId" }, { status: 400 })
-    }
+    const userId = await requireUserId(req)
+    const { dateRange, taskType, targetBand } = await req.json()
 
     if (!dateRange || ![7, 30, 90].includes(dateRange)) {
       return Response.json({ error: "Invalid dateRange. Must be 7, 30, or 90" }, { status: 400 })
     }
 
     // Fetch all tasks for the user
-    const allTasks = (await getTasks(userId)) as TaskDocument[]
+    const tasksSnapshot = await getAdminDb()
+      .collection("users")
+      .doc(userId)
+      .collection("tasks")
+      .orderBy("updatedAt", "desc")
+      .get()
+    // Admin Timestamps expose the same toDate()/toMillis() API used by the analytics helpers
+    const allTasks = tasksSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as unknown as TaskDocument[]
     
     // Filter tasks that have been scored (have overallBand)
     let scoredTasks = allTasks.filter(task => 
@@ -133,9 +137,10 @@ export async function POST(req: NextRequest) {
 
     return Response.json(reportData)
   } catch (error) {
+    if (error instanceof UnauthorizedError) return unauthorizedResponse()
     console.error("[progress-report] Error:", error)
     return Response.json(
-      { error: error instanceof Error ? error.message : "Failed to generate progress report" },
+      { error: "Failed to generate progress report" },
       { status: 500 }
     )
   }

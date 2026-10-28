@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { authFetch } from "@/lib/auth-fetch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
@@ -52,7 +53,7 @@ export function ProgressReports({ userId: propUserId }: ProgressReportsProps = {
     
     async function fetchTarget() {
       try {
-        const response = await fetch(`/api/reports/target?userId=${userId}`)
+        const response = await authFetch("/api/reports/target")
         if (response.ok) {
           const data = await response.json()
           setUserTarget(data.target)
@@ -81,7 +82,7 @@ export function ProgressReports({ userId: propUserId }: ProgressReportsProps = {
     setError(null)
 
     try {
-      const response = await fetch("/api/reports/progress", {
+      const response = await authFetch("/api/reports/progress", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
