@@ -4,7 +4,7 @@ import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
 import { withRateLimit } from "@/lib/server-rate-limiter"
 import { z } from "zod"
 
-export const maxDuration = 30
+export const maxDuration = 60
 
 const grammarSchema = z.object({
   issues: z.array(

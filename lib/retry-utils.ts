@@ -17,10 +17,35 @@ const DEFAULT_CONFIG: Required<RetryConfig> = {
 }
 
 /**
- * Check if an error is retryable (429 Too Many Requests or quota errors)
+ * Check if an error means the model is temporarily overloaded (503 / high demand)
  */
-function isRetryableError(error: any): boolean {
+export function isModelOverloadedError(error: any): boolean {
   if (!error) return false
+
+  if (error.status === 503 || error.statusCode === 503 || error.response?.status === 503) {
+    return true
+  }
+
+  const errorString = (error.message || error.toString() || "").toLowerCase()
+
+  return (
+    errorString.includes("503") ||
+    errorString.includes("high demand") ||
+    errorString.includes("overloaded") ||
+    errorString.includes("service unavailable")
+  )
+}
+
+/**
+ * Check if an error is retryable (429 Too Many Requests, quota errors, or temporary overload).
+ * Quotas are per model, so these errors also mean a different model may still succeed.
+ */
+export function isRetryableError(error: any): boolean {
+  if (!error) return false
+
+  if (isModelOverloadedError(error)) {
+    return true
+  }
 
   // Check for 429 status code
   if (error.status === 429 || error.response?.status === 429) {
