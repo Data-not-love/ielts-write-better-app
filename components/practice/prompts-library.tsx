@@ -10,6 +10,7 @@ import { FileText, Eye, Sparkles, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { authFetch } from "@/lib/auth-fetch"
+import { IELTS_TOPICS, tagsIncludeTopic } from "@/lib/ielts-topics"
 
 type Prompt = {
   id: string
@@ -19,18 +20,7 @@ type Prompt = {
   tags: string[]
 }
 
-const availableTopics = [
-  "Technology",
-  "Education",
-  "Environment",
-  "Health",
-  "Society",
-  "Government",
-  "Economy",
-  "Culture",
-  "Science",
-  "Transportation",
-]
+const availableTopics: readonly string[] = IELTS_TOPICS
 
 export function PromptsLibrary() {
   const router = useRouter()
@@ -82,7 +72,7 @@ export function PromptsLibrary() {
   const filteredPrompts = prompts.filter((prompt) => {
     const matchesType = activeTab === "all" || prompt.type === activeTab
     const matchesTopics =
-      selectedTopics.length === 0 || selectedTopics.some((topic) => prompt.tags.includes(topic))
+      selectedTopics.length === 0 || selectedTopics.some((topic) => tagsIncludeTopic(prompt.tags, topic))
     return matchesType && matchesTopics
   })
 

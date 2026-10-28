@@ -4,6 +4,7 @@ import { getGoogleModel } from "@/lib/ai"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
 import { withRateLimit } from "@/lib/server-rate-limiter"
 import { z } from "zod"
+import { IELTS_TOPICS, toIeltsTopic, type IeltsTopic } from "@/lib/ielts-topics"
 
 export const maxDuration = 60
 
@@ -27,10 +28,11 @@ export async function POST(req: Request) {
     const { taskType, topics, count } = await req.json()
 
     const promptCount = Math.min(Math.max(Number(count) || 4, 1), 10)
+    // Only known topics reach the model; this also dedupes and fixes casing
     const cleanTopics = Array.isArray(topics)
-      ? topics.filter((t): t is string => typeof t === "string" && t.length <= 50).slice(0, 15)
+      ? [...new Set(topics.map(toIeltsTopic).filter((t): t is IeltsTopic => t !== undefined))]
       : []
-    const selectedTopics = cleanTopics.length > 0 ? cleanTopics : ["general"]
+    const selectedTopics: readonly string[] = cleanTopics.length > 0 ? cleanTopics : IELTS_TOPICS
     const selectedTaskType = taskType || "all"
 
     // Check if API key is available - never fall back to fake prompts
@@ -75,7 +77,7 @@ Requirements:
   - Correct type ("Task 1" or "Task 2")
   - A descriptive title
   - A detailed description/question
-  - 2-4 relevant tags
+  - 2-4 relevant tags. The FIRST tag must be exactly one of the topic names listed above, spelled exactly as given (e.g. "${selectedTopics[0]}"). Other tags may be free-form.
 
 Ensure variety in:
 - Question types (opinion, discussion, problem-solution, advantages-disadvantages)
@@ -87,7 +89,10 @@ Ensure variety in:
       )
     )
 
-    return Response.json({ prompts: object.prompts })
+    // Normalize tag casing to the canonical topic names so client-side filtering matches
+    const prompts = object.prompts.map((p) => ({ ...p, tags: p.tags.map((tag) => toIeltsTopic(tag) ?? tag) }))
+
+    return Response.json({ prompts })
   } catch (error: any) {
     console.error("[v0] Error generating prompts:", error)
     
