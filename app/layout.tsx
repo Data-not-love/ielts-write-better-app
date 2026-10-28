@@ -8,6 +8,7 @@ import { Suspense } from "react"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { FloatingChatWidget } from "@/components/chat/floating-chat-widget"
+import { accentInitScript } from "@/lib/accent"
 import "./globals.css"
 
 const bodyFont = Be_Vietnam_Pro({
@@ -36,6 +37,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: accentInitScript }} />
+      </head>
       <body className={`font-sans ${bodyFont.variable} ${displayFont.variable} ${GeistMono.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
