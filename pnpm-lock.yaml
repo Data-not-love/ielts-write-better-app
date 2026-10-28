@@ -106,7 +106,7 @@ importers:
         specifier: 2.2.0
         version: 2.2.0(@upstash/redis@1.39.0)
       '@upstash/redis':
-        specifier: ^1.39.0
+        specifier: 1.39.0
         version: 1.39.0
       '@vercel/analytics':
         specifier: latest
@@ -2300,9 +2300,6 @@ packages:
 
   '@upstash/redis@1.39.0':
     resolution: {integrity: sha512-VwkpYTdxSfjSulQS5h16NHtg/1UEheBfvez2AeGKinAujOoGXhXCcohQRzsQ/d2g/XzbjzTVGhG8Ds8uOI0Mxg==}
-
-  '@upstash/redis@1.40.0':
-    resolution: {integrity: sha512-F6+V7Kof2McJtGWclusZLt7hBRmIMZg+albS32/5TuNRg/92FM2nkyKPY9wWEieMj9hjyUi4iURsN1djsHNbwA==}
 
   '@vercel/analytics@1.6.1':
     resolution: {integrity: sha512-oH9He/bEM+6oKlv3chWuOOcp8Y6fo6/PSro8hEkgCW3pu9/OiCXiUpRUogDh3Fs3LH2sosDrx8CxeOLBEE+afg==}
@@ -6723,7 +6720,7 @@ snapshots:
 
   '@upstash/core-analytics@0.0.10':
     dependencies:
-      '@upstash/redis': 1.40.0
+      '@upstash/redis': 1.39.0
 
   '@upstash/ratelimit@2.2.0(@upstash/redis@1.39.0)':
     dependencies:
@@ -6731,10 +6728,6 @@ snapshots:
       '@upstash/redis': 1.39.0
 
   '@upstash/redis@1.39.0':
-    dependencies:
-      uncrypto: 0.1.3
-
-  '@upstash/redis@1.40.0':
     dependencies:
       uncrypto: 0.1.3
 
