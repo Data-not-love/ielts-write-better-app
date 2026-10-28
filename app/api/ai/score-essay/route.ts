@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Use only gemini-2.0-flash model - no configuration or fallback
+    // Use only gemini-3.5-flash model - no configuration or fallback
     const model = getGeminiModel()
 
     const systemPrompt = `You are an expert IELTS examiner. Evaluate the following ${taskType} essay according to official IELTS criteria:
@@ -62,7 +62,7 @@ ${essay}
 
 Provide a comprehensive IELTS evaluation following the JSON structure specified. Pay special attention to whether the essay addresses the specific prompt above.`
 
-    // Call gemini-2.0-flash model using v1 API endpoint
+    // Call gemini-3.5-flash model using v1 API endpoint
     let result
     try {
       result = await model.generateContent({
@@ -75,7 +75,7 @@ Provide a comprehensive IELTS evaluation following the JSON structure specified.
         generationConfig: {
           temperature: 0.3,
           responseMimeType: "application/json",
-          maxOutputTokens: 1024,
+          maxOutputTokens: 8192,
         },
       })
     } catch (apiError) {

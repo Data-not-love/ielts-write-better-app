@@ -100,7 +100,7 @@ Provide a comprehensive IELTS evaluation following the JSON structure specified.
             generationConfig: {
               temperature: 0.3,
               responseMimeType: "application/json",
-              maxOutputTokens: 2048,
+              maxOutputTokens: 8192,
             },
           }),
           GEMINI_RETRY_CONFIG

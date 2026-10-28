@@ -16,8 +16,8 @@ export function getGeminiClient() {
 
 export function getGeminiModel(modelName?: string) {
   const client = getGeminiClient()
-  // Always use gemini-2.0-flash for scoring - do not allow overrides
-  const model = "gemini-2.0-flash"
+  // Always use gemini-3.5-flash for scoring - do not allow overrides
+  const model = "gemini-3.5-flash"
   return client.getGenerativeModel({ 
     model,
     // Ensure we're using v1 API, not v1beta

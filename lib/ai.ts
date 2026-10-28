@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 
-const DEFAULT_GOOGLE_MODEL = "gemini-2.0-flash"
+const DEFAULT_GOOGLE_MODEL = "gemini-3.5-flash"
 
 let googleClient: ReturnType<typeof createGoogleGenerativeAI> | undefined
 

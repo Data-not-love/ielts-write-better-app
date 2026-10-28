@@ -66,7 +66,7 @@ Remember: Write ONLY the essay, no additional commentary.`
             ],
             generationConfig: {
               temperature: 0.7,
-              maxOutputTokens: 1024,
+              maxOutputTokens: 8192,
             },
           }),
           GEMINI_RETRY_CONFIG
