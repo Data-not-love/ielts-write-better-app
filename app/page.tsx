@@ -4,6 +4,7 @@ import { TopNav } from "@/components/navigation/top-nav"
 import { ArrowRight } from "lucide-react"
 import { DemoSection } from "@/components/home/demo-section"
 import { Footer } from "@/components/home/footer"
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in"
 
 const criteria = [
   { code: "TR", name: "Task Response", note: "Bạn có trả lời đúng và đủ đề bài không" },
@@ -15,6 +16,7 @@ const criteria = [
 export default function HomePage() {
   return (
     <div className="min-h-screen">
+      <RedirectIfSignedIn />
       <TopNav />
 
       {/* Intro */}
