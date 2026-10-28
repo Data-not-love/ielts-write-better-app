@@ -47,7 +47,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <dl className="border-t border-foreground/80">
+          <dl className="stagger-children border-t border-foreground/80">
             {criteria.map((c) => (
               <div key={c.code} className="grid grid-cols-[3.5rem_1fr] gap-x-4 border-b border-border py-4">
                 <dt className="font-mono text-sm font-medium text-primary tabular-nums">{c.code}</dt>

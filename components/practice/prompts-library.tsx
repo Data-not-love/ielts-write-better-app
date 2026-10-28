@@ -234,9 +234,9 @@ export function PromptsLibrary() {
       )}
 
       {!isLoading && filteredPrompts.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-6" id="prompts-grid" data-toc-title="Available Prompts">
+        <div className="stagger-children grid md:grid-cols-2 gap-6" id="prompts-grid" data-toc-title="Available Prompts">
           {filteredPrompts.map((prompt) => (
-            <Card key={prompt.id} className="rounded-2xl border-border bg-card">
+            <Card key={prompt.id} className="rounded-2xl border-border bg-card transition-colors hover:border-foreground/25">
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex flex-wrap gap-2">

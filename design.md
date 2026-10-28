@@ -29,9 +29,13 @@ Defined as shadcn variables in `app/globals.css` (the "Hallmark redesign" block 
 - Content (`/privacy`, `/terms`): Long Document, one readable column.
 
 ## Motion
-- Use colour or border transitions only. No `hover:scale`, no lift shadows, no `transition-all` on new code.
+- Hover and press: colour or border transitions, plus a 1px press on buttons (`active:translate-y-px`). No `hover:scale`, no lift shadows.
+- Entrances (in `app/globals.css`):
+  - `animate-page-in`: a 240ms opacity fade on every route change, applied in `app/template.tsx`. It uses opacity only, because a transform would re-anchor `position: fixed` children such as the TOC.
+  - `animate-rise-in`: 360ms with 6px of travel, for content that appears after an action (demo result, chat messages).
+  - `stagger-children`: reveals the direct children of a grid or list 50ms apart, capped at 300ms (criteria list, dashboard grids, prompt cards).
 - The typing indicator fades in opacity (`animate-typing`) and does not bounce.
-- Respect `prefers-reduced-motion`.
+- `prefers-reduced-motion` removes durations and delays; smooth anchor scrolling only runs without it.
 
 ## Don'ts
 - No emoji in UI copy; use Lucide icons.

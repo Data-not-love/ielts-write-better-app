@@ -116,7 +116,7 @@ export function DemoSection() {
               ) : null}
 
               {feedback ? (
-                <div className="space-y-6">
+                <div className="space-y-6 animate-rise-in">
                   <div className="flex items-end justify-between border-b border-border pb-6">
                     <p className="text-sm text-muted-foreground">Band ước tính</p>
                     <div className="font-display text-6xl font-semibold leading-none text-primary tabular-nums">

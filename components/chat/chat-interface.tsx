@@ -320,7 +320,7 @@ export function ChatInterface() {
                   messages.map((message, index) => (
                     <div
                       key={index}
-                      className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex gap-3 animate-rise-in ${message.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       {message.role === "assistant" && (
                         <div className="rounded-full bg-primary/10 p-2 h-8 w-8 flex items-center justify-center flex-shrink-0">

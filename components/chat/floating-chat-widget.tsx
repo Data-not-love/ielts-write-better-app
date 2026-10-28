@@ -338,7 +338,7 @@ export function FloatingChatWidget() {
                   messages.map((message, index) => (
                     <div
                       key={index}
-                      className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex gap-2 animate-rise-in ${message.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       {message.role === "assistant" && (
                         <div className="rounded-full bg-primary/10 p-1.5 h-6 w-6 flex items-center justify-center flex-shrink-0">

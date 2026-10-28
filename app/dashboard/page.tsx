@@ -361,7 +361,7 @@ export default function DashboardPage() {
 
           {/* Target Setting and Skill Priority Section */}
           {user && reportData && !reportLoading && reportData.totalSubmissions > 0 && (
-            <div className="grid lg:grid-cols-3 gap-6 mb-8" id="target-setting" data-toc-title="Target Setting">
+            <div className="stagger-children grid lg:grid-cols-3 gap-6 mb-8" id="target-setting" data-toc-title="Target Setting">
               <div className="lg:col-span-1">
                 <TargetSetting
                   userId={user.uid}
@@ -432,7 +432,7 @@ export default function DashboardPage() {
 
           {/* Stats Cards - fallback when no report data */}
           {(!reportData || reportData.totalSubmissions === 0) && (
-            <div className="grid md:grid-cols-3 gap-6 mb-8" id="stats" data-toc-title="Statistics">
+            <div className="stagger-children grid md:grid-cols-3 gap-6 mb-8" id="stats" data-toc-title="Statistics">
             <Card className="rounded-2xl border-border bg-card">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Latest Overall Score</CardTitle>
@@ -591,7 +591,7 @@ export default function DashboardPage() {
           )}
 
           {/* Progress Chart */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-8" id="progress-activity" data-toc-title="Progress & Activity">
+          <div className="stagger-children grid lg:grid-cols-2 gap-6 mb-8" id="progress-activity" data-toc-title="Progress & Activity">
             <Card className="rounded-2xl border-border bg-card">
               <CardHeader>
                 <CardTitle>Your Progress</CardTitle>
