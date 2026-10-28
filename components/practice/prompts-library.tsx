@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, Eye, Sparkles, Loader2 } from "lucide-react"
+import { FileText, Eye, Sparkles, Loader2, X } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { authFetch } from "@/lib/auth-fetch"
@@ -106,8 +106,19 @@ export function PromptsLibrary() {
       {/* Topic Selection */}
       <Card className="rounded-2xl border-border bg-card mb-6" id="topic-selection" data-toc-title="Topic Selection">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-base">Select Topics</CardTitle>
+            <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setSelectedTopics([])}
+              disabled={selectedTopics.length === 0}
+              size="sm"
+              variant="outline"
+              className="gap-2"
+            >
+              <X className="h-4 w-4" />
+              Clear options
+            </Button>
             <Button onClick={generatePrompts} disabled={isLoading} size="sm" className="gap-2">
               {isLoading ? (
                 <>
@@ -121,6 +132,7 @@ export function PromptsLibrary() {
                 </>
               )}
             </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
