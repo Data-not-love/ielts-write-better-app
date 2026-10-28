@@ -1,54 +1,14 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  setDoc,
-  Timestamp,
-  onSnapshot,
-} from "firebase/firestore"
+import { collection, doc, getDoc, query, orderBy, setDoc, updateDoc, Timestamp, onSnapshot } from "firebase/firestore"
 import type { TaskDocument } from "@/types/tasks"
 import { db } from "./firebase"
 
-// Tasks
-export async function createTask(userId: string, taskData: any) {
-  const tasksRef = collection(db, "users", userId, "tasks")
-  const now = Timestamp.now()
-  
-  // Create initial revision if feedback exists
-  const revisions = taskData.feedback ? [{
-    id: taskData.revisionId || `rev_${Date.now()}`,
-    overallBand: taskData.overallBand || taskData.feedback.overallBand,
-    summary: taskData.summary || taskData.feedback.summary,
-    createdAt: now,
-    feedback: taskData.feedback
-  }] : []
-  
-  const docRef = await addDoc(tasksRef, {
-    ...taskData,
-    revisions,
-    createdAt: now,
-    updatedAt: now,
-  })
-  return docRef.id
-}
+// Tasks are read-only in the browser (see firestore.rules); they are written by the
+// API routes through lib/tasks-server.ts so scores can't be edited client-side.
 
-export async function getTasks(userId: string) {
-  const tasksRef = collection(db, "users", userId, "tasks")
-  const q = query(tasksRef, orderBy("updatedAt", "desc"))
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-}
-
-export async function getTask(userId: string, taskId: string) {
+export async function getTask(userId: string, taskId: string): Promise<TaskDocument | null> {
   const taskRef = doc(db, "users", userId, "tasks", taskId)
   const snapshot = await getDoc(taskRef)
-  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null
+  return snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as TaskDocument) : null
 }
 
 export function subscribeToTasks(
@@ -69,61 +29,22 @@ export function subscribeToTasks(
       onUpdate(documents)
     },
     (error) => {
-      console.error("[v0] Failed to subscribe to tasks:", error)
-      if (onError) {
-        onError(error)
-      }
+      console.error("Failed to subscribe to tasks:", error)
+      onError?.(error)
     },
   )
 }
 
-export async function updateTask(userId: string, taskId: string, updates: any) {
-  const taskRef = doc(db, "users", userId, "tasks", taskId)
-  await updateDoc(taskRef, {
-    ...updates,
-    updatedAt: Timestamp.now(),
-  })
-}
-
-export async function addRevisionToTask(userId: string, taskId: string, revision: any) {
-  const taskRef = doc(db, "users", userId, "tasks", taskId)
-  const taskDoc = await getDoc(taskRef)
-  
-  if (!taskDoc.exists()) {
-    throw new Error("Task not found")
-  }
-  
-  const taskData = taskDoc.data()
-  const existingRevisions = taskData.revisions || []
-  
-  const newRevision = {
-    ...revision,
-    id: revision.id || `rev_${Date.now()}`,
-    createdAt: Timestamp.now()
-  }
-  
-  await updateDoc(taskRef, {
-    revisions: [...existingRevisions, newRevision],
-    overallBand: revision.overallBand,
-    summary: revision.summary,
-    feedback: revision.feedback,
-    updatedAt: Timestamp.now(),
-  })
-}
-
-export async function deleteTask(userId: string, taskId: string) {
-  const taskRef = doc(db, "users", userId, "tasks", taskId)
-  await deleteDoc(taskRef)
-}
-
 // User Profile
+export type UserProfile = Record<string, unknown>
+
 export async function getUserProfile(userId: string) {
   const userRef = doc(db, "users", userId)
   const snapshot = await getDoc(userRef)
-  return snapshot.exists() ? snapshot.data() : null
+  return snapshot.exists() ? (snapshot.data() as UserProfile) : null
 }
 
-export async function createUserProfile(userId: string, profileData: any) {
+export async function createUserProfile(userId: string, profileData: UserProfile) {
   const userRef = doc(db, "users", userId)
   await setDoc(userRef, {
     ...profileData,
@@ -132,7 +53,7 @@ export async function createUserProfile(userId: string, profileData: any) {
   })
 }
 
-export async function updateUserProfile(userId: string, updates: any) {
+export async function updateUserProfile(userId: string, updates: UserProfile) {
   const userRef = doc(db, "users", userId)
   await updateDoc(userRef, {
     ...updates,

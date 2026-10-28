@@ -6,21 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Copy, GitCompare, CheckCircle2, AlertCircle, Loader2, RefreshCw, Edit, Sparkles } from "lucide-react"
+import { ArrowLeft, Copy, GitCompare, CheckCircle2, AlertCircle, Loader2, RefreshCw, Edit } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/components/auth/auth-provider"
-import { getTask, addRevisionToTask } from "@/lib/firebase-firestore"
+import { getTask } from "@/lib/firebase-firestore"
 import type { CriterionKey, TaskDocument, TaskFeedback, LineLevelFeedback } from "@/types/tasks"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { authFetch } from "@/lib/auth-fetch"
-import { Task1VisualView } from "@/components/tasks/task1-visual"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+import { Task1VisualView } from "@/components/tasks/task1-visual-lazy"
+import { RevisionHistory } from "@/components/tasks/revision-history"
+import { applyCorrections, segmentByFeedback } from "@/lib/feedback-text"
 
 interface TaskDetailProps {
   taskId: string
@@ -38,8 +35,6 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const [editedResponse, setEditedResponse] = useState("")
   const [isRevaluating, setIsRevaluating] = useState(false)
   const [highlightedFeedback, setHighlightedFeedback] = useState<LineLevelFeedback | null>(null)
-  const [improvementRequests, setImprovementRequests] = useState<Record<string, any>>({})
-  const [loadingImprovements, setLoadingImprovements] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     let isMounted = true
@@ -68,7 +63,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           setActiveTab(criteriaKeys[0])
         }
       } catch (error) {
-        console.error("[v0] Failed to load task:", error)
+        console.error("Failed to load task:", error)
         if (!isMounted) return
         setLoadError("Unable to load this task. Please try again later.")
       } finally {
@@ -95,29 +90,18 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
       const response = await authFetch("/api/essays/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // The server re-scores against the task's stored prompt and visual, then saves the revision
         body: JSON.stringify({
           essayText: editedResponse,
-          taskType: task.taskType,
-          promptText: task.prompt,
-          userId: user.uid,
-          promptId: task.promptId,
-          ...(task.visual != null ? { visual: task.visual } : {}),
+          save: { mode: "revision", taskId },
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => null)
 
       if (!response.ok || !data?.feedback) {
         throw new Error(data?.error || "Failed to re-evaluate essay")
       }
-
-      // Add the new revision to the task
-      await addRevisionToTask(user.uid, taskId, {
-        id: data.revisionId,
-        overallBand: data.feedback.overallBand,
-        summary: data.feedback.summary,
-        feedback: data.feedback,
-      })
 
       // Refresh task data
       const updatedTask = await getTask(user.uid, taskId)
@@ -128,61 +112,15 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         title: "Re-evaluation complete",
         description: "Your essay has been re-scored successfully.",
       })
-    } catch (error: any) {
-      console.error("[v0] Re-evaluation failed:", error)
+    } catch (error) {
+      console.error("Re-evaluation failed:", error)
       toast({
         title: "Re-evaluation failed",
-        description: error.message || "Unable to re-evaluate essay. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to re-evaluate essay. Please try again.",
         variant: "destructive",
       })
     } finally {
       setIsRevaluating(false)
-    }
-  }
-
-  const handleRequestImprovement = async (feedbackItem: LineLevelFeedback, revisionId: string, response: string) => {
-    const key = `${revisionId}-${feedbackItem.startIndex}-${feedbackItem.endIndex}`
-    
-    setLoadingImprovements(prev => ({ ...prev, [key]: true }))
-    
-    try {
-      const sentence = response.substring(feedbackItem.startIndex, feedbackItem.endIndex)
-      
-      const res = await authFetch("/api/essays/improve-sentence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sentence,
-          context: task?.prompt,
-          category: feedbackItem.category,
-          currentIssue: feedbackItem.comment,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to get improvement suggestions")
-      }
-
-      setImprovementRequests(prev => ({ 
-        ...prev, 
-        [key]: data.improvement 
-      }))
-
-      toast({
-        title: "Đề xuất cải thiện đã sẵn sàng",
-        description: "Đã tạo đề xuất sửa lỗi cho câu này.",
-      })
-    } catch (error: any) {
-      console.error("[v0] Failed to get improvement:", error)
-      toast({
-        title: "Không thể tạo đề xuất",
-        description: error.message || "Vui lòng thử lại sau.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoadingImprovements(prev => ({ ...prev, [key]: false }))
     }
   }
 
@@ -214,120 +152,28 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     GRA: "Grammar & Accuracy",
   }
 
-  const renderHighlightedText = (text: string, feedbackItems: LineLevelFeedback[], highlighted: LineLevelFeedback | null) => {
-    if (!feedbackItems || feedbackItems.length === 0) {
-      return text
-    }
+  const HIGHLIGHT_COLORS: Record<string, [string, string]> = {
+    grammar: ["bg-red-100 dark:bg-red-950/50", "bg-red-200 dark:bg-red-900"],
+    lexical: ["bg-yellow-100 dark:bg-yellow-950/50", "bg-yellow-200 dark:bg-yellow-900"],
+    coherence: ["bg-blue-100 dark:bg-blue-950/50", "bg-blue-200 dark:bg-blue-900"],
+    task_response: ["bg-purple-100 dark:bg-purple-950/50", "bg-purple-200 dark:bg-purple-900"],
+  }
 
-    // Sort feedback items by startIndex to process them in order
-    const sortedFeedback = [...feedbackItems]
-      .filter(item => {
-        // Validate indices
-        return item.startIndex >= 0 && 
-               item.endIndex <= text.length && 
-               item.startIndex < item.endIndex
-      })
-      .sort((a, b) => a.startIndex - b.startIndex)
-    
-    const parts: JSX.Element[] = []
-    let lastIndex = 0
-
-    sortedFeedback.forEach((feedback, index) => {
-      // Add text before this feedback
-      if (feedback.startIndex > lastIndex) {
-        parts.push(
-          <span key={`text-${index}`}>
-            {text.substring(lastIndex, feedback.startIndex)}
-          </span>
-        )
-      }
-
-      // Add the highlighted feedback
-      const categoryColors: Record<string, string> = {
-        grammar: highlighted === feedback ? "bg-red-200 dark:bg-red-900" : "bg-red-100 dark:bg-red-950/50",
-        lexical: highlighted === feedback ? "bg-yellow-200 dark:bg-yellow-900" : "bg-yellow-100 dark:bg-yellow-950/50",
-        coherence: highlighted === feedback ? "bg-blue-200 dark:bg-blue-900" : "bg-blue-100 dark:bg-blue-950/50",
-        task_response: highlighted === feedback ? "bg-purple-200 dark:bg-purple-900" : "bg-purple-100 dark:bg-purple-950/50",
-      }
-
-      const colorClass = categoryColors[feedback.category] || (highlighted === feedback ? "bg-gray-200 dark:bg-gray-900" : "bg-gray-100 dark:bg-gray-950/50")
-
-      parts.push(
+  const renderHighlightedText = (text: string, feedbackItems: LineLevelFeedback[], highlighted: LineLevelFeedback | null) =>
+    segmentByFeedback(text, feedbackItems).map((segment, index) => {
+      if (!segment.feedback) return <span key={index}>{segment.text}</span>
+      const isActive = highlighted === segment.feedback
+      const [normal, active] = HIGHLIGHT_COLORS[segment.feedback.category] ?? ["bg-muted", "bg-muted-foreground/20"]
+      return (
         <span
-          key={`feedback-${index}`}
-          className={`${colorClass} px-1 rounded cursor-pointer transition-colors border-b-2 ${
-            highlighted === feedback ? "border-current" : "border-transparent"
-          }`}
-          title={feedback.comment}
+          key={index}
+          className={`${isActive ? active : normal} px-1 rounded cursor-pointer transition-colors border-b-2 ${isActive ? "border-current" : "border-transparent"}`}
+          title={segment.feedback.comment}
         >
-          {text.substring(feedback.startIndex, feedback.endIndex)}
+          {segment.text}
         </span>
       )
-
-      lastIndex = feedback.endIndex
     })
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(
-        <span key="text-end">
-          {text.substring(lastIndex)}
-        </span>
-      )
-    }
-
-    return <>{parts}</>
-  }
-
-  const renderCorrectedText = (text: string, feedbackItems: LineLevelFeedback[]) => {
-    if (!feedbackItems || feedbackItems.length === 0) {
-      return text
-    }
-
-    // Helper function to check if feedback is irrelevant
-    const isIrrelevant = (feedback: LineLevelFeedback) => {
-      if (!feedback.comment) return false
-      
-      const commentLower = feedback.comment.toLowerCase()
-      const irrelevanceKeywords = [
-        'n/a',
-        'irrelevant to the prompt',
-        'irrelevant to prompt',
-        'should be removed',
-        'does not address the prompt'
-      ]
-      
-      return irrelevanceKeywords.some(keyword => commentLower.includes(keyword))
-    }
-
-    // Sort feedback items by startIndex in reverse order to process from end to start
-    // This prevents index shifting issues
-    const sortedFeedback = [...feedbackItems]
-      .filter(item => {
-        return item.startIndex >= 0 && 
-               item.endIndex <= text.length && 
-               item.startIndex < item.endIndex
-      })
-      .sort((a, b) => b.startIndex - a.startIndex)
-    
-    let correctedText = text
-    
-    sortedFeedback.forEach((feedback) => {
-      const before = correctedText.substring(0, feedback.startIndex)
-      const after = correctedText.substring(feedback.endIndex)
-      
-      if (isIrrelevant(feedback)) {
-        // Remove this segment entirely (skip it in the improved version)
-        correctedText = before + after
-      } else if (feedback.suggestedRewrite) {
-        // Replace with suggested rewrite
-        correctedText = before + feedback.suggestedRewrite + after
-      }
-      // else: keep the original text (do nothing)
-    })
-
-    return correctedText
-  }
 
   type CriterionEntry = [CriterionKey, TaskFeedback["criteria"][CriterionKey]]
 
@@ -564,13 +410,13 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                                 </Badge>
                               </div>
                               <p className="text-sm font-mono text-muted-foreground mb-2">
-                                "{excerpt}"
+                                &quot;{excerpt}&quot;
                               </p>
                               <p className="text-sm mb-2">{feedback.comment}</p>
                               {feedback.suggestedRewrite && (
                                 <div className="mt-2 p-2 bg-background rounded">
                                   <p className="text-xs text-muted-foreground mb-1">Suggested rewrite:</p>
-                                  <p className="text-sm font-mono text-success">"{feedback.suggestedRewrite}"</p>
+                                  <p className="text-sm font-mono text-success">&quot;{feedback.suggestedRewrite}&quot;</p>
                                 </div>
                               )}
                             </div>
@@ -586,7 +432,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                         <h4 className="text-sm font-semibold mb-2">Corrected Version (with all suggestions applied):</h4>
                         <div className="p-4 bg-muted/50 rounded-lg">
                           <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
-                            {renderCorrectedText(task.response || "", task.feedback.lineLevelFeedback)}
+                            {applyCorrections(task.response || "", task.feedback.lineLevelFeedback)}
                           </div>
                         </div>
                       </div>
@@ -610,181 +456,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           )}
 
           {/* Revisions Timeline */}
-          <Card className="rounded-2xl border-border bg-card">
-            <CardHeader>
-              <CardTitle>Revisions Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!task.revisions || task.revisions.length === 0 ? (
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  No revisions have been recorded for this task yet.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {task.revisions.map((revision, index) => {
-                    const revisionNumber = task.revisions!.length - index
-                    const hasErrors = revision.feedback?.lineLevelFeedback && revision.feedback.lineLevelFeedback.length > 0
-                    
-                    return (
-                      <Collapsible key={revision.id}>
-                        <div className="p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">Revision {revisionNumber}</Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {revision.createdAt && typeof revision.createdAt.toDate === 'function'
-                                  ? format(revision.createdAt.toDate(), "MMM d, yyyy 'at' h:mm a")
-                                  : "Recent"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="default" className="text-sm">
-                                Band {revision.overallBand.toFixed(1)}
-                              </Badge>
-                              {hasErrors && (
-                                <CollapsibleTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <AlertCircle className="h-4 w-4 mr-1 text-warning" />
-                                    {revision.feedback.lineLevelFeedback!.length} lỗi
-                                  </Button>
-                                </CollapsibleTrigger>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{revision.summary}</p>
-                          
-                          {hasErrors && (
-                            <CollapsibleContent className="mt-3">
-                              <div className="space-y-2 pl-2 border-l-2 border-muted">
-                                <p className="text-xs font-semibold text-muted-foreground mb-2">Các lỗi được phát hiện:</p>
-                                {revision.feedback!.lineLevelFeedback!.map((feedback, fbIndex) => {
-                                  const key = `${revision.id}-${feedback.startIndex}-${feedback.endIndex}`
-                                  const improvement = improvementRequests[key]
-                                  const isLoading = loadingImprovements[key]
-                                  const excerpt = task.response?.substring(feedback.startIndex, feedback.endIndex) || ""
-                                  
-                                  const categoryColors = {
-                                    grammar: "border-red-300 bg-red-50/60 dark:border-red-900 dark:bg-red-950/30",
-                                    lexical: "border-yellow-300 bg-yellow-50/60 dark:border-yellow-900 dark:bg-yellow-950/30",
-                                    coherence: "border-blue-300 bg-blue-50/60 dark:border-blue-900 dark:bg-blue-950/30",
-                                    task_response: "border-purple-300 bg-purple-50/60 dark:border-purple-900 dark:bg-purple-950/30",
-                                  }
-                                  
-                                  const categoryLabels = {
-                                    grammar: "Ngữ pháp",
-                                    lexical: "Từ vựng",
-                                    coherence: "Liên kết",
-                                    task_response: "Phù hợp đề bài",
-                                  }
-                                  
-                                  return (
-                                    <div
-                                      key={fbIndex}
-                                      className={`p-3 rounded-md border ${categoryColors[feedback.category]} space-y-2`}
-                                    >
-                                      <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <Badge variant="outline" className="text-xs">
-                                              {categoryLabels[feedback.category]}
-                                            </Badge>
-                                          </div>
-                                          <p className="text-sm font-mono text-muted-foreground mb-2">
-                                            "{excerpt}"
-                                          </p>
-                                          <p className="text-sm mb-2">{feedback.comment}</p>
-                                          
-                                          {!improvement && !feedback.suggestedRewrite && (
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={() => handleRequestImprovement(feedback, revision.id, task.response || "")}
-                                              disabled={isLoading}
-                                              className="mt-2"
-                                            >
-                                              {isLoading ? (
-                                                <>
-                                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                                  Đang tạo đề xuất...
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <Sparkles className="h-3 w-3 mr-1" />
-                                                  Request Improve
-                                                </>
-                                              )}
-                                            </Button>
-                                          )}
-                                          
-                                          {(feedback.suggestedRewrite || improvement) && (
-                                            <div className="mt-2 p-3 bg-background rounded space-y-2">
-                                              <p className="text-xs font-semibold text-success mb-1">
-                                                <Sparkles className="h-3 w-3 inline mr-1" />
-                                                Đề xuất cải thiện:
-                                              </p>
-                                              <p className="text-sm font-mono text-success">
-                                                "{improvement?.improvedSentence || feedback.suggestedRewrite}"
-                                              </p>
-                                              
-                                              {improvement && (
-                                                <>
-                                                  <div className="pt-2 border-t border-border">
-                                                    <p className="text-xs font-semibold mb-1">Giải thích:</p>
-                                                    <p className="text-xs text-muted-foreground">{improvement.explanation}</p>
-                                                  </div>
-                                                  
-                                                  {improvement.grammarIssues?.length > 0 && (
-                                                    <div className="pt-2">
-                                                      <p className="text-xs font-semibold mb-1">Lỗi ngữ pháp:</p>
-                                                      <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
-                                                        {improvement.grammarIssues.map((issue: string, i: number) => (
-                                                          <li key={i}>{issue}</li>
-                                                        ))}
-                                                      </ul>
-                                                    </div>
-                                                  )}
-                                                  
-                                                  {improvement.spellingIssues?.length > 0 && (
-                                                    <div className="pt-2">
-                                                      <p className="text-xs font-semibold mb-1">Lỗi chính tả:</p>
-                                                      <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
-                                                        {improvement.spellingIssues.map((issue: string, i: number) => (
-                                                          <li key={i}>{issue}</li>
-                                                        ))}
-                                                      </ul>
-                                                    </div>
-                                                  )}
-                                                  
-                                                  {improvement.styleImprovements?.length > 0 && (
-                                                    <div className="pt-2">
-                                                      <p className="text-xs font-semibold mb-1">Cải thiện phong cách:</p>
-                                                      <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
-                                                        {improvement.styleImprovements.map((issue: string, i: number) => (
-                                                          <li key={i}>{issue}</li>
-                                                        ))}
-                                                      </ul>
-                                                    </div>
-                                                  )}
-                                                </>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </CollapsibleContent>
-                          )}
-                        </div>
-                      </Collapsible>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <RevisionHistory revisions={task.revisions ?? []} currentResponse={task.response || ""} prompt={task.prompt} />
         </div>
 
         {/* Right: Feedback */}

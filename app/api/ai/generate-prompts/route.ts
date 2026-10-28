@@ -1,12 +1,12 @@
+import { aiErrorResponse, errorMessage } from "@/lib/ai-errors"
 import { guardAiRequest } from "@/lib/ai-guard"
 import { generateObject } from "ai"
 import { getGoogleModel } from "@/lib/ai"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
-import { withRateLimit } from "@/lib/server-rate-limiter"
 import { z } from "zod"
 import { IELTS_TOPICS, toIeltsTopic, type IeltsTopic } from "@/lib/ielts-topics"
 import { categoriesForTask, taskOfCategory, toIeltsCategory, type IeltsCategory } from "@/lib/ielts-categories"
-import { CATEGORY_BY_KIND, fromGenerated, parseVisual, visualGenerationSchema } from "@/lib/task1-visual"
+import { CATEGORY_BY_KIND, fromGenerated, parseVisual, visualGenerationSchema, type Task1Visual } from "@/lib/task1-visual"
 
 export const maxDuration = 60
 
@@ -20,7 +20,10 @@ const promptItemSchema = z.object({
   visual: visualGenerationSchema.optional().describe("Required for Task 1 prompts, omitted for Task 2"),
 })
 
-const promptSchemaFor = (count: number) => z.object({ prompts: z.array(promptItemSchema).min(count).max(count) })
+/** A prompt as returned to the client: the model's output with a validated visual */
+type GeneratedPrompt = Omit<z.infer<typeof promptItemSchema>, "visual"> & { visual?: Task1Visual }
+
+const promptSchemaFor =(count: number) => z.object({ prompts: z.array(promptItemSchema).min(count).max(count) })
 
 // Visual data makes Task 1 prompts several times larger, so they are generated in smaller batches
 const MAX_TASK1_PROMPTS = 4
@@ -63,7 +66,7 @@ export async function POST(req: Request) {
 
     // Check if API key is available - never fall back to fake prompts
     if (!process.env.GEMINI_API_KEY) {
-      console.error("[v0] GEMINI_API_KEY not found, cannot generate prompts")
+      console.error("GEMINI_API_KEY not found, cannot generate prompts")
       return Response.json({
         error: "AI tạo đề bài chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
         errorType: "NOT_CONFIGURED"
@@ -83,9 +86,7 @@ export async function POST(req: Request) {
 
     const topicsInstruction = selectedTopics.join(", ")
 
-    // Use server-side rate limiting to prevent quota exhaustion
-    const { object } = await withRateLimit(() =>
-      retryWithBackoff(
+    const { object } = await retryWithBackoff(
         () =>
           generateObject({
             model: getGoogleModel(),
@@ -122,14 +123,13 @@ ${selectedTaskType === "Task 2" ? "" : VISUAL_INSTRUCTIONS}`,
           }),
         GEMINI_RETRY_CONFIG
       )
-    )
 
     // Normalize tags and category to canonical names so client-side filtering matches;
     // a known category also decides the task type, in case the model mislabels it.
     // Task 1 prompts must carry a valid visual (its kind then decides the category);
     // ones without are dropped rather than retried, to save quota.
     const dropped: string[] = []
-    const prompts = object.prompts.flatMap((p) => {
+    const prompts = object.prompts.flatMap((p): GeneratedPrompt[] => {
       const { visual: rawVisual, ...rest } = p
       let category = toIeltsCategory(p.category)
       const type = category ? taskOfCategory(category) : p.type
@@ -157,29 +157,11 @@ ${selectedTaskType === "Task 2" ? "" : VISUAL_INSTRUCTIONS}`,
     }
 
     return Response.json({ prompts, dropped: dropped.length })
-  } catch (error: any) {
-    console.error("[v0] Error generating prompts:", error)
-    
-    // Check for rate limit / quota errors
-    const errorMessage = error?.message || error?.toString() || ""
-    const isRateLimitError = 
-      error?.status === 429 ||
-      error?.response?.status === 429 ||
-      errorMessage.toLowerCase().includes("too many requests") ||
-      errorMessage.toLowerCase().includes("quota") ||
-      errorMessage.toLowerCase().includes("rate limit") ||
-      errorMessage.includes("429")
-    
-    if (isRateLimitError) {
-      return Response.json({ 
-        error: "AI tạo đề bài đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.",
-        errorType: "RATE_LIMIT"
-      }, { status: 429 })
-    }
-    
-    return Response.json({ 
-      error: "Failed to generate prompts",
-      errorType: "GENERIC"
-    }, { status: 500 })
+  } catch (error) {
+    console.error("Error generating prompts:", errorMessage(error))
+    return aiErrorResponse(error, {
+      rateLimit: "AI tạo đề bài đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.",
+      generic: "Failed to generate prompts",
+    })
   }
 }

@@ -1,3 +1,4 @@
+import { ProtectedRoute } from "@/components/auth/protected-route"
 import { TopNav } from "@/components/navigation/top-nav"
 import { SecondaryNav } from "@/components/navigation/secondary-nav"
 import { PracticeNav } from "@/components/navigation/practice-nav"
@@ -6,8 +7,9 @@ import { Footer } from "@/components/home/footer"
 
 export default function PlannerPage() {
   return (
+    <ProtectedRoute>
     <div className="min-h-screen">
-      <TopNav isSignedIn userName="Alex Chen" userEmail="alex@example.com" />
+      <TopNav />
       <SecondaryNav />
       <PracticeNav />
 
@@ -18,5 +20,6 @@ export default function PlannerPage() {
       {/* Footer */}
       <Footer />
     </div>
+    </ProtectedRoute>
   )
 }

@@ -119,7 +119,7 @@ export function calculateCriteriaTrends(tasks: TaskDocument[]): {
   })
   
   // Calculate averages
-  const result: any = { TR: [], CC: [], LR: [], GRA: [] }
+  const result: Record<CriterionKey, CriteriaScoreData[]> = { TR: [], CC: [], LR: [], GRA: [] }
   
   ;(["TR", "CC", "LR", "GRA"] as CriterionKey[]).forEach(criterion => {
     criteriaWeeks[criterion].forEach((scores, week) => {
@@ -129,7 +129,7 @@ export function calculateCriteriaTrends(tasks: TaskDocument[]): {
         score: Math.round(average * 10) / 10 
       })
     })
-    result[criterion].sort((a: any, b: any) => a.week - b.week)
+    result[criterion].sort((a, b) => a.week - b.week)
   })
   
   return result
@@ -594,7 +594,7 @@ export function calculateSkillPriority(
   // Sort by gap (highest gap = weakest skill)
   skillGaps.sort((a, b) => b.gap.gap - a.gap.gap)
   
-  const result: any = {}
+  const result = {} as import("@/types/reports").SkillPriority
   skillGaps.forEach(({ skill, gap }) => {
     result[skill] = gap
   })

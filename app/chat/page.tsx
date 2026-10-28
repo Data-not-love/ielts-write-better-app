@@ -1,3 +1,4 @@
+import { ProtectedRoute } from "@/components/auth/protected-route"
 import { TopNav } from "@/components/navigation/top-nav"
 import { SecondaryNav } from "@/components/navigation/secondary-nav"
 import { ChatInterface } from "@/components/chat/chat-interface"
@@ -6,8 +7,9 @@ import { Footer } from "@/components/home/footer"
 
 export default function ChatPage() {
   return (
+    <ProtectedRoute>
     <div className="min-h-screen">
-      <TopNav isSignedIn userName="Alex Chen" userEmail="alex@example.com" />
+      <TopNav />
       <SecondaryNav />
       <PageWithTOC>
         <div className="container mx-auto px-4 py-8">
@@ -18,5 +20,6 @@ export default function ChatPage() {
       {/* Footer */}
       <Footer />
     </div>
+    </ProtectedRoute>
   )
 }

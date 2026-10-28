@@ -2,7 +2,14 @@
 
 import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
+
+type ChartRow = { shortName: string; Current: number; Before?: number }
+type TooltipContent = {
+  active?: boolean
+  payload?: ReadonlyArray<{ color?: string; name?: string | number; value?: unknown; payload?: ChartRow }>
+}
+type BarLabel = { x?: number | string; y?: number | string; width?: number | string; value?: unknown; dataKey?: unknown; payload?: ChartRow }
 
 interface PerformanceComparisonChartProps {
   beforeScores?: {
@@ -21,10 +28,10 @@ interface PerformanceComparisonChartProps {
 }
 
 // Color scheme from the requirements
-const BEFORE_COLOR = "#9B5DE5" // Purple-pink for Before/Pre-test
-const CURRENT_COLOR = "#FF9F1C" // Orange for Now/Current
-const GRID_COLOR = "rgba(255,255,255,0.15)" // Light gray transparent
-const BORDER_COLOR = "rgba(255,255,255,0.6)" // White transparent border
+const BEFORE_COLOR = "var(--chart-1)" // Purple-pink for Before/Pre-test
+const CURRENT_COLOR = "var(--chart-2)" // Orange for Now/Current
+const GRID_COLOR = "var(--border)" // Light gray transparent
+const BORDER_COLOR = "var(--muted-foreground)" // White transparent border
 
 // Full criterion names
 const CRITERIA_NAMES = {
@@ -45,7 +52,7 @@ const CRITERIA_SHORT_NAMES: Record<keyof typeof CRITERIA_NAMES, string> = {
 // Helper to format improvement areas
 function formatImprovementAreas(improvements: Record<string, number>): string {
   return Object.entries(improvements)
-    .filter(([_, val]) => val < 0)
+    .filter(([, val]) => val < 0)
     .map(([key, val]) => `${key} (${val.toFixed(2)})`)
     .join(', ')
 }
@@ -97,34 +104,34 @@ export function PerformanceComparisonChart({
     const averageImprovement = (improvements.TR + improvements.CC + improvements.LR + improvements.GRA) / 4
     const maxImprovement = Math.max(...Object.values(improvements))
     const minImprovement = Math.min(...Object.values(improvements))
-    const maxCriterion = Object.entries(improvements).find(([_, val]) => val === maxImprovement)?.[0]
+    const maxCriterion = Object.entries(improvements).find(([, val]) => val === maxImprovement)?.[0]
     
     return { improvements, averageImprovement, maxImprovement, minImprovement, maxCriterion }
   }
 
   const improvementInfo = calculateImprovement()
 
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload
+  // Tooltip renderer: a plain function (not a component) so it is not re-created as a new component type each render
+  const renderTooltip = ({ active, payload }: TooltipContent) => {
+    const data = payload?.[0]?.payload
+    if (active && payload && data) {
       return (
-        <div className="bg-[#0f172a] border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-semibold mb-2 text-sm text-white">{CRITERIA_NAMES[data.shortName as keyof typeof CRITERIA_NAMES]}</p>
-          {payload.map((entry: any, index: number) => (
+        <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-semibold mb-2 text-sm text-foreground">{CRITERIA_NAMES[data.shortName as keyof typeof CRITERIA_NAMES]}</p>
+          {payload.map((entry, index) => (
             <div key={index} className="flex items-center gap-2 text-sm">
               <div 
                 className="w-3 h-3 rounded-full" 
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-gray-300">{entry.name}:</span>
-              <span className="font-semibold text-white">{entry.value.toFixed(1)}</span>
+              <span className="text-muted-foreground">{entry.name}:</span>
+              <span className="font-semibold text-foreground">{Number(entry.value).toFixed(1)}</span>
             </div>
           ))}
-          {beforeScores && (
-            <div className="mt-2 pt-2 border-t border-gray-600">
-              <span className="text-xs text-gray-400">
-                Improvement: <span className={`font-semibold ${data.Current - data.Before >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {beforeScores && data.Before !== undefined && (
+            <div className="mt-2 pt-2 border-t border-border">
+              <span className="text-xs text-muted-foreground">
+                Improvement: <span className={`font-semibold ${data.Current - data.Before >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {data.Current - data.Before >= 0 ? '+' : ''}{(data.Current - data.Before).toFixed(1)}
                 </span>
               </span>
@@ -137,24 +144,28 @@ export function PerformanceComparisonChart({
   }
 
   // Custom label renderer with improvement indicators
-  const renderCustomLabel = (props: any) => {
-    const { x, y, width, value, dataKey } = props
+  const renderCustomLabel = (props: BarLabel) => {
+    const x = Number(props.x ?? 0)
+    const y = Number(props.y ?? 0)
+    const width = Number(props.width ?? 0)
+    const value = Number(props.value ?? 0)
+    const { dataKey } = props
     if (!showLabels || value === 0) return null
     
     // Show improvement delta for Current bars
     if (dataKey === 'Current' && beforeScores) {
-      const criterionShortName = props.payload.shortName as keyof typeof beforeScores
+      const criterionShortName = props.payload?.shortName as keyof typeof beforeScores
       const beforeValue = beforeScores[criterionShortName]
       const improvement = value - beforeValue
       const improvementText = improvement >= 0 ? `+${improvement.toFixed(1)}` : improvement.toFixed(1)
-      const color = improvement > 0 ? '#22c55e' : improvement < 0 ? '#ef4444' : '#9CA3AF'
+      const color = improvement > 0 ? "var(--success)" : improvement < 0 ? "var(--destructive)" : "var(--muted-foreground)"
       
       return (
         <g>
           <text
             x={x + width / 2}
             y={y - 20}
-            fill="#FFFFFF"
+            fill="var(--foreground)"
             textAnchor="middle"
             fontSize={12}
             fontWeight={600}
@@ -179,7 +190,7 @@ export function PerformanceComparisonChart({
       <text
         x={x + width / 2}
         y={y - 5}
-        fill="#FFFFFF"
+        fill="var(--foreground)"
         textAnchor="middle"
         fontSize={12}
         fontWeight={600}
@@ -190,12 +201,12 @@ export function PerformanceComparisonChart({
   }
 
   return (
-    <Card className="rounded-2xl border-border bg-[#111827]">
+    <Card className="rounded-2xl border-border bg-card">
       <CardHeader>
-        <CardTitle className="text-2xl text-white">
+        <CardTitle className="text-2xl text-foreground">
           Your Progress – Performance across IELTS Criteria
         </CardTitle>
-        <CardDescription className="text-gray-300">
+        <CardDescription className="text-muted-foreground">
           {beforeScores 
             ? "Comparison of your first submission vs current average performance across all IELTS criteria"
             : "Your current performance across all IELTS criteria"
@@ -204,7 +215,7 @@ export function PerformanceComparisonChart({
         {improvementInfo && (
           <div className="mt-3 space-y-2">
             {improvementInfo.averageImprovement > 0 ? (
-              <p className="text-sm text-green-400 font-semibold flex items-center gap-2">
+              <p className="text-sm text-success font-semibold flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Average improvement: <span className="text-lg">+{improvementInfo.averageImprovement.toFixed(2)} bands</span> across all criteria
               </p>
@@ -214,20 +225,20 @@ export function PerformanceComparisonChart({
                 Average change: <span className="text-lg">{improvementInfo.averageImprovement.toFixed(2)} bands</span> - keep practicing!
               </p>
             ) : (
-              <p className="text-sm text-gray-400 font-semibold">
+              <p className="text-sm text-muted-foreground font-semibold">
                 Your scores are stable. Focus on consistent practice for improvement.
               </p>
             )}
             {improvementInfo.maxImprovement > 0 && improvementInfo.maxCriterion && (
-              <p className="text-sm text-gray-300 flex items-start gap-2">
-                <TrendingUp className="h-4 w-4 flex-shrink-0 mt-0.5 text-green-400" />
+              <p className="text-sm text-muted-foreground flex items-start gap-2">
+                <TrendingUp className="h-4 w-4 flex-shrink-0 mt-0.5 text-success" />
                 <span>
-                  Best improvement: <span className="font-bold text-green-400">+{improvementInfo.maxImprovement.toFixed(2)} bands</span> in {improvementInfo.maxCriterion} ({CRITERIA_SHORT_NAMES[improvementInfo.maxCriterion as keyof typeof CRITERIA_SHORT_NAMES]})
+                  Best improvement: <span className="font-bold text-success">+{improvementInfo.maxImprovement.toFixed(2)} bands</span> in {improvementInfo.maxCriterion} ({CRITERIA_SHORT_NAMES[improvementInfo.maxCriterion as keyof typeof CRITERIA_SHORT_NAMES]})
                 </span>
               </p>
             )}
             {improvementInfo.minImprovement < 0 && (
-              <p className="text-sm text-gray-300 flex items-start gap-2">
+              <p className="text-sm text-muted-foreground flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-orange-400" />
                 <span>
                   Areas needing attention: {formatImprovementAreas(improvementInfo.improvements)}
@@ -252,8 +263,8 @@ export function PerformanceComparisonChart({
             />
             <XAxis 
               dataKey="name"
-              tick={{ fill: "#E5E7EB", fontSize: 12 }}
-              tickLine={{ stroke: "rgba(255,255,255,0.2)" }}
+              tick={{ fill: "var(--foreground)", fontSize: 12 }}
+              tickLine={{ stroke: "var(--border)" }}
               interval={0}
               angle={0}
               textAnchor="middle"
@@ -262,24 +273,24 @@ export function PerformanceComparisonChart({
             <YAxis
               domain={[4, 9]}
               ticks={[4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9]}
-              tick={{ fill: "#9CA3AF", fontSize: 12 }}
-              tickLine={{ stroke: "rgba(255,255,255,0.2)" }}
+              tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+              tickLine={{ stroke: "var(--border)" }}
               label={{ 
                 value: "Band Score", 
                 angle: -90, 
                 position: "insideLeft", 
-                style: { fill: "#E5E7EB", fontSize: 14, fontWeight: 600 } 
+                style: { fill: "var(--foreground)", fontSize: 14, fontWeight: 600 } 
               }}
             />
             <Tooltip 
-              content={<CustomTooltip />}
-              cursor={{ fill: "rgba(255,255,255,0.05)" }}
+              content={renderTooltip}
+              cursor={{ fill: "var(--muted)" }}
             />
             <Legend 
               wrapperStyle={{ paddingTop: "20px" }}
               iconType="rect"
               formatter={(value) => (
-                <span className="text-sm font-semibold text-white">{value}</span>
+                <span className="text-sm font-semibold text-foreground">{value}</span>
               )}
             />
             {beforeScores && (

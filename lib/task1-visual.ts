@@ -152,7 +152,9 @@ export type Series = { name: string; values: number[] }
 export type PieChartData = { label: string; slices: { label: string; value: number }[] }
 export type TableRow = { label: string; cells: string[] }
 
-export type BarOrLine = { kind: "bar" | "line"; title: string; unit: string; xLabels: string[]; series: Series[] }
+// One union member per kind, so narrowing on `kind` works
+type XYData = { title: string; unit: string; xLabels: string[]; series: Series[] }
+export type BarOrLine = XYData & ({ kind: "bar" } | { kind: "line" })
 export type PieVisual = { kind: "pie"; title: string; unit: string; pies: PieChartData[] }
 export type TableVisual = { kind: "table"; title: string; unit: string; columns: string[]; rows: TableRow[] }
 export type ChartPart = BarOrLine | PieVisual | TableVisual
@@ -198,19 +200,24 @@ const num = (v: unknown): number => {
 const between = (n: number, min: number, max: number, what: string) => {
   if (n < min || n > max) throw new VisualError(`${what}: ${n} not in ${min}-${max}`)
 }
+// Untrusted input is narrowed field by field: non-objects read as {}, non-arrays as []
+type Raw = Record<string, unknown>
+const record = (v: unknown): Raw => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Raw) : {})
+const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
 
-function parseChartPart(raw: any): ChartPart {
-  const title = text(raw?.title, MAX_TITLE, "title")
-  const unit = optText(raw?.unit, 40)
+function parseChartPart(input: unknown): ChartPart {
+  const raw = record(input)
+  const title = text(raw.title, MAX_TITLE, "title")
+  const unit = optText(raw.unit, 40)
 
-  switch (raw?.kind) {
+  switch (raw.kind) {
     case "bar":
     case "line": {
-      const xLabels = (raw.xLabels ?? []).map((l: unknown) => text(l, 30, "x label"))
+      const xLabels = list(raw.xLabels).map((l) => text(l, 30, "x label"))
       between(xLabels.length, 2, 12, "x labels")
-      const series: Series[] = (raw.series ?? []).map((s: any) => ({
-        name: text(s?.name, MAX_LABEL, "series name"),
-        values: (s?.values ?? []).map(num),
+      const series: Series[] = list(raw.series).map(record).map((s) => ({
+        name: text(s.name, MAX_LABEL, "series name"),
+        values: list(s.values).map(num),
       }))
       between(series.length, 1, 6, "series")
       for (const s of series) if (s.values.length !== xLabels.length) throw new VisualError("series length != x labels")
@@ -218,9 +225,9 @@ function parseChartPart(raw: any): ChartPart {
       return { kind: raw.kind, title, unit, xLabels, series }
     }
     case "pie": {
-      const pies: PieChartData[] = (raw.pies ?? []).map((p: any) => ({
-        label: optText(p?.label, 40),
-        slices: (p?.slices ?? []).map((s: any) => ({ label: text(s?.label, 40, "slice"), value: num(s?.value) })),
+      const pies: PieChartData[] = list(raw.pies).map(record).map((p) => ({
+        label: optText(p.label, 40),
+        slices: list(p.slices).map(record).map((s) => ({ label: text(s.label, 40, "slice"), value: num(s.value) })),
       }))
       between(pies.length, 1, 3, "pies")
       for (const p of pies) {
@@ -232,43 +239,44 @@ function parseChartPart(raw: any): ChartPart {
       return { kind: "pie", title, unit: unit || "%", pies }
     }
     case "table": {
-      const columns = (raw.columns ?? []).map((c: unknown) => text(c, 40, "column"))
+      const columns = list(raw.columns).map((c) => text(c, 40, "column"))
       between(columns.length, 2, 7, "columns")
-      const rows: TableRow[] = (raw.rows ?? []).map((r: any) => ({
-        label: text(r?.label, 50, "row label"),
-        cells: (r?.cells ?? []).map((c: unknown) => text(String(c ?? ""), 30, "cell")),
+      const rows: TableRow[] = list(raw.rows).map(record).map((r) => ({
+        label: text(r.label, 50, "row label"),
+        cells: list(r.cells).map((c) => text(String(c ?? ""), 30, "cell")),
       }))
       between(rows.length, 2, 10, "rows")
       for (const r of rows) if (r.cells.length !== columns.length) throw new VisualError("row length != columns")
       return { kind: "table", title, unit, columns, rows }
     }
     default:
-      throw new VisualError(`unknown chart kind ${raw?.kind}`)
+      throw new VisualError(`unknown chart kind ${String(raw.kind)}`)
   }
 }
 
-function parseMapPeriod(raw: any): MapPeriod {
-  const cells = (raw?.cells ?? []).map((c: unknown) => optText(c, 30))
+function parseMapPeriod(input: unknown): MapPeriod {
+  const raw = record(input)
+  const cells = list(raw.cells).map((c) => optText(c, 30))
   if (cells.length !== 9) throw new VisualError("map needs 9 cells")
   if (cells.filter(Boolean).length < 3) throw new VisualError("map too empty")
-  return { label: text(raw?.label, 30, "map period"), cells }
+  return { label: text(raw.label, 30, "map period"), cells }
 }
 
 /** Validates model output or stored data. Returns null (with a reason) instead of throwing. */
 export function parseVisual(raw: unknown): { visual: Task1Visual; error?: undefined } | { visual: null; error: string } {
   try {
-    const r = raw as any
+    const r = record(raw)
     let body: Task1Visual
-    switch (r?.kind) {
+    switch (r.kind) {
       case "mixed": {
-        const parts = (r.parts ?? []).map(parseChartPart)
+        const parts = list(r.parts).map(parseChartPart)
         between(parts.length, 2, 2, "mixed parts")
         if (parts[0].kind === parts[1].kind) throw new VisualError("mixed parts must differ")
         body = { version: VISUAL_VERSION, kind: "mixed", title: text(r.title, MAX_TITLE, "title"), parts }
         break
       }
       case "process": {
-        const steps: ProcessStep[] = (r.steps ?? []).map((s: any) => ({ label: text(s?.label, 50, "step"), detail: optText(s?.detail, 90) }))
+        const steps: ProcessStep[] = list(r.steps).map(record).map((s) => ({ label: text(s.label, 50, "step"), detail: optText(s.detail, 90) }))
         between(steps.length, 4, 12, "steps")
         body = { version: VISUAL_VERSION, kind: "process", title: text(r.title, MAX_TITLE, "title"), steps, cyclic: r.cyclic === true }
         break

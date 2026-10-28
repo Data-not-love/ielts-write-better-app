@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileText, Eye, Sparkles, Loader2, X } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { toast } from "sonner"
+import { toast } from "@/hooks/use-toast"
 import { authFetch } from "@/lib/auth-fetch"
 import { IELTS_TOPICS, tagsIncludeTopic } from "@/lib/ielts-topics"
 import { CATEGORY_GROUPS, categoriesForTask } from "@/lib/ielts-categories"
-import { Task1VisualView } from "@/components/tasks/task1-visual"
+import { Task1VisualView } from "@/components/tasks/task1-visual-lazy"
 
 type Prompt = {
   id: string
@@ -38,6 +38,8 @@ export function PromptsLibrary() {
   // Generate a Task 1 + Task 2 mix on mount so both tabs start with prompts
   useEffect(() => {
     generatePrompts(null)
+    // Runs once on mount by design; later generations are triggered by the user
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Explicit generation targets the open tab; null asks for a mix of both tasks
@@ -67,10 +69,14 @@ export function PromptsLibrary() {
       }
 
       setPrompts(result.prompts)
-      toast.success("New prompts generated!")
-    } catch (error: any) {
+      toast({ title: "New prompts generated!" })
+    } catch (error) {
       console.error("Error generating prompts:", error)
-      toast.error(error?.message || "Failed to generate prompts. Please try again.")
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Failed to generate prompts. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }

@@ -79,6 +79,8 @@ export function TableOfContents({
   // Auto-detect headings from the page if items not provided
   useEffect(() => {
     if (items && items.length > 0) {
+      // Explicit items replace auto-detected headings
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTocItems(items)
       return
     }

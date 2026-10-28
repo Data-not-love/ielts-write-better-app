@@ -34,6 +34,17 @@ export interface Revision {
   summary: string
   createdAt: Timestamp
   feedback?: TaskFeedback
+  /** Essay text this revision scored (stored since server-side scoring; absent on older revisions) */
+  response?: string
+}
+
+/** Response of /api/essays/improve-sentence */
+export interface SentenceImprovement {
+  improvedSentence: string
+  explanation: string
+  grammarIssues: string[]
+  spellingIssues: string[]
+  styleImprovements: string[]
 }
 
 export interface TaskDocument {

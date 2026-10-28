@@ -1,5 +1,6 @@
 "use client"
 
+import { titledError, type EssayOutline, type TitledError } from "@/types/practice"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ export function EssayPlanner() {
   const [topic, setTopic] = useState("")
   const [targetBand, setTargetBand] = useState("7.0")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [outline, setOutline] = useState<any>(null)
+  const [outline, setOutline] = useState<EssayOutline | null>(null)
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -35,16 +36,15 @@ export function EssayPlanner() {
           ? result?.error || "AI tạo dàn ý đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút."
           : result?.error || "Failed to generate outline. Please try again."
         
-        const error: any = new Error(errorMessage)
-        error.title = isRateLimitError ? "Vượt giới hạn sử dụng" : "Error"
-        throw error
+        throw titledError(errorMessage, isRateLimitError ? "Vượt giới hạn sử dụng" : "Error")
       }
       
       if (result.outline) {
         setOutline(result.outline)
       }
-    } catch (error: any) {
-      console.error("[v0] Error generating outline:", error)
+    } catch (caught) {
+      const error = caught as TitledError
+      console.error("Error generating outline:", error)
       toast({
         title: error?.title || "Error",
         description: error?.message || "Failed to generate outline. Please try again.",
@@ -127,7 +127,7 @@ export function EssayPlanner() {
           <CardContent>
             {!outline ? (
               <div className="flex items-center justify-center min-h-[400px] text-muted-foreground text-center">
-                <p>Enter a topic and click "Generate Outline" to see your essay structure</p>
+                <p>Enter a topic and click &quot;Generate Outline&quot; to see your essay structure</p>
               </div>
             ) : (
               <div className="space-y-6">

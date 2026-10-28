@@ -1,292 +1,42 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { authFetch } from "@/lib/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Send, Bot, User, ChevronDown, FileText, CheckCircle2, AlertCircle, Sparkles } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useChatSession } from "@/hooks/use-chat-session"
 import { Markdown } from "@/components/ui/markdown"
-
-interface Message {
-  role: "user" | "assistant"
-  content: string
-}
-
-interface GeminiModelOption {
-  id: string
-  displayName: string
-  description?: string
-}
-
-interface ScoredEssay {
-  id: string
-  title: string
-  prompt: string
-  response: string
-  taskType: string
-  overallBand: number
-  feedback: any
-  updatedAt: any
-}
 
 export function ChatInterface() {
   const { user } = useAuth()
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState("")
-  const [attachTask, setAttachTask] = useState(false)
-  const [tone, setTone] = useState("neutral")
-  const [level, setLevel] = useState("B2")
-  const [modelOptions, setModelOptions] = useState<GeminiModelOption[]>([])
-  const [selectedModel, setSelectedModel] = useState<string>("")
-  const [modelError, setModelError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [scoredEssays, setScoredEssays] = useState<ScoredEssay[]>([])
-  const [selectedEssay, setSelectedEssay] = useState<ScoredEssay | null>(null)
   const [isEssaysOpen, setIsEssaysOpen] = useState(false)
-  const [loadingEssays, setLoadingEssays] = useState(false)
-
-  useEffect(() => {
-    const fetchModels = async () => {
-      try {
-        const response = await fetch("/api/ai/models")
-
-        if (!response.ok) {
-          const { error } = await response.json().catch(() => ({ error: "" }))
-          throw new Error(error || "Failed to load Gemini models")
-        }
-
-        const data = await response.json()
-        const options: GeminiModelOption[] = data.models ?? []
-
-        setModelOptions(options)
-        setSelectedModel(data.defaultModelId ?? options[0]?.id ?? "")
-        setModelError(null)
-      } catch (error) {
-        console.error("Failed to load Gemini models", error)
-        setModelError(error instanceof Error ? error.message : "Failed to load Gemini models")
-      }
-    }
-
-    fetchModels()
-  }, [])
-
-  useEffect(() => {
-    const fetchScoredEssays = async () => {
-      if (!user) {
-        setScoredEssays([])
-        return
-      }
-
-      setLoadingEssays(true)
-      try {
-        const response = await authFetch("/api/essays/scored")
-        if (!response.ok) {
-          throw new Error("Failed to fetch scored essays")
-        }
-
-        const data = await response.json()
-        setScoredEssays(data.essays || [])
-      } catch (error) {
-        console.error("Failed to load scored essays:", error)
-        setScoredEssays([])
-      } finally {
-        setLoadingEssays(false)
-      }
-    }
-
-    fetchScoredEssays()
-  }, [user])
-
-  const handleSend = async () => {
-    if (!input.trim()) return
-
-    const userMessage: Message = { role: "user", content: input }
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
-    setIsLoading(true)
-
-    try {
-      const response = await authFetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-          tone,
-          level,
-          model: selectedModel || undefined,
-          attachedTask: selectedEssay
-            ? {
-                prompt: selectedEssay.prompt,
-                essay: selectedEssay.response,
-              }
-            : null,
-        }),
-      })
-
-      if (!response.ok) {
-        let errorMessage = `Request failed with status ${response.status}`
-        try {
-          const data = await response.json()
-          if (data?.error && typeof data.error === "string") {
-            errorMessage = data.error
-          }
-        } catch (jsonError) {
-          console.error("Failed to parse error response", jsonError)
-        }
-
-        throw new Error(errorMessage)
-      }
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error("Chat response did not include a readable stream")
-      }
-      const decoder = new TextDecoder()
-      let assistantMessage = ""
-
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }])
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        assistantMessage += chunk
-
-        setMessages((prev) => {
-          const newMessages = [...prev]
-          if (newMessages[newMessages.length - 1]?.role === "assistant") {
-            newMessages[newMessages.length - 1].content = assistantMessage
-          }
-          return newMessages
-        })
-      }
-    } catch (error) {
-      console.error("[v0] Error in chat:", error)
-      
-      // Check if it's a rate limit error
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      const isRateLimitError = 
-        errorMessage.toLowerCase().includes("vượt giới hạn") ||
-        errorMessage.toLowerCase().includes("rate limit") ||
-        errorMessage.toLowerCase().includes("quota") ||
-        errorMessage.toLowerCase().includes("too many requests")
-      
-      const responseMessage = isRateLimitError 
-        ? "Xin lỗi, AI đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút."
-        : errorMessage.includes("đăng nhập")
-          ? errorMessage
-          : "Sorry, I encountered an error. Please try again."
-      
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: responseMessage },
-      ])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleQuickAction = async (action: string) => {
-    if (!selectedEssay || isLoading) return
-    
-    const userMessage: Message = { role: "user", content: action }
-    setMessages((prev) => [...prev, userMessage])
-    setIsLoading(true)
-
-    try {
-      const response = await authFetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-          tone,
-          level,
-          model: selectedModel || undefined,
-          attachedTask: {
-            prompt: selectedEssay.prompt,
-            essay: selectedEssay.response,
-          },
-        }),
-      })
-
-      if (!response.ok) {
-        let errorMessage = `Request failed with status ${response.status}`
-        try {
-          const data = await response.json()
-          if (data?.error && typeof data.error === "string") {
-            errorMessage = data.error
-          }
-        } catch (jsonError) {
-          console.error("Failed to parse error response", jsonError)
-        }
-
-        throw new Error(errorMessage)
-      }
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error("Chat response did not include a readable stream")
-      }
-      const decoder = new TextDecoder()
-      let assistantMessage = ""
-
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }])
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        assistantMessage += chunk
-
-        setMessages((prev) => {
-          const newMessages = [...prev]
-          if (newMessages[newMessages.length - 1]?.role === "assistant") {
-            newMessages[newMessages.length - 1].content = assistantMessage
-          }
-          return newMessages
-        })
-      }
-    } catch (error) {
-      console.error("[v0] Error in chat:", error)
-      
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      const isRateLimitError = 
-        errorMessage.toLowerCase().includes("vượt giới hạn") ||
-        errorMessage.toLowerCase().includes("rate limit") ||
-        errorMessage.toLowerCase().includes("quota") ||
-        errorMessage.toLowerCase().includes("too many requests")
-      
-      const responseMessage = isRateLimitError 
-        ? "Xin lỗi, AI đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút."
-        : errorMessage.includes("đăng nhập")
-          ? errorMessage
-          : "Sorry, I encountered an error. Please try again."
-      
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: responseMessage },
-      ])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
+  const {
+    messages,
+    input,
+    setInput,
+    tone,
+    setTone,
+    level,
+    setLevel,
+    modelOptions,
+    selectedModel,
+    setSelectedModel,
+    modelError,
+    isLoading,
+    scoredEssays,
+    selectedEssay,
+    setSelectedEssay,
+    loadingEssays,
+    handleSend,
+    handleQuickAction,
+    handleKeyDown,
+  } = useChatSession()
 
   return (
     <div>
@@ -310,7 +60,7 @@ export function ChatInterface() {
                     <div className="rounded-full bg-primary/10 p-6 mb-4">
                       <Bot className="h-12 w-12 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">Hi! I'm your IELTS Writing Assistant</h3>
+                    <h3 className="text-lg font-semibold mb-2">Hi! I&apos;m your IELTS Writing Assistant</h3>
                     <p className="text-sm text-muted-foreground max-w-md">
                       I can analyze your draft by TR/CC/LR/GRA or help paraphrase sentences. Ask me anything about IELTS
                       writing!

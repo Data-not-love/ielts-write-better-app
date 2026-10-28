@@ -1,5 +1,6 @@
 "use client"
 
+import { titledError, type Paraphrase, type TitledError } from "@/types/practice"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,7 @@ export function ParaphraseTool() {
   const { toast } = useToast()
   const [input, setInput] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [paraphrases, setParaphrases] = useState<any[]>([])
+  const [paraphrases, setParaphrases] = useState<Paraphrase[]>([])
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
   const handleGenerate = async () => {
@@ -30,9 +31,7 @@ export function ParaphraseTool() {
       if (!response.ok) {
         // Check for rate limit errors
         if (response.status === 429 || result?.errorType === "RATE_LIMIT") {
-          const error: any = new Error(result?.error || "AI diễn giải đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.")
-          error.title = "Vượt giới hạn sử dụng"
-          throw error
+          throw titledError(result?.error || "AI diễn giải đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.", "Vượt giới hạn sử dụng")
         } else {
           throw new Error(result?.error || "Failed to generate paraphrases. Please try again.")
         }
@@ -41,8 +40,9 @@ export function ParaphraseTool() {
       if (result.paraphrases) {
         setParaphrases(result.paraphrases)
       }
-    } catch (error: any) {
-      console.error("[v0] Error generating paraphrases:", error)
+    } catch (caught) {
+      const error = caught as TitledError
+      console.error("Error generating paraphrases:", error)
       toast({
         title: error?.title || "Error",
         description: error?.message || "Failed to generate paraphrases. Please try again.",
@@ -118,7 +118,7 @@ export function ParaphraseTool() {
           <CardContent>
             {paraphrases.length === 0 ? (
               <div className="flex items-center justify-center min-h-[200px] text-muted-foreground text-center">
-                <p>Enter text and click "Generate Paraphrases" to see options</p>
+                <p>Enter text and click &quot;Generate Paraphrases&quot; to see options</p>
               </div>
             ) : (
               <div className="space-y-4">

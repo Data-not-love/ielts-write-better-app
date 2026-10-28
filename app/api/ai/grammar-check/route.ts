@@ -1,9 +1,9 @@
+import { aiErrorResponse, errorMessage } from "@/lib/ai-errors"
 import { guardAiRequest } from "@/lib/ai-guard"
 import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { generateObject } from "ai"
 import { getGoogleModel } from "@/lib/ai"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
-import { withRateLimit } from "@/lib/server-rate-limiter"
 import { z } from "zod"
 
 export const maxDuration = 60
@@ -34,9 +34,7 @@ export async function POST(req: Request) {
     const invalid = validateTextFields({ text: [text, INPUT_LIMITS.essay] })
     if (invalid) return invalid
 
-    // Use server-side rate limiting to prevent quota exhaustion
-    const { object } = await withRateLimit(() =>
-      retryWithBackoff(
+    const { object } = await retryWithBackoff(
         () =>
           generateObject({
             model: getGoogleModel(),
@@ -57,32 +55,13 @@ Focus on: subject-verb agreement, tense consistency, article usage, prepositions
           }),
         GEMINI_RETRY_CONFIG
       )
-    )
 
     return Response.json({ issues: object.issues })
-  } catch (error: any) {
-    console.error("[v0] Error checking grammar:", error)
-    
-    // Check for rate limit / quota errors
-    const errorMessage = error?.message || error?.toString() || ""
-    const isRateLimitError = 
-      error?.status === 429 ||
-      error?.response?.status === 429 ||
-      errorMessage.toLowerCase().includes("too many requests") ||
-      errorMessage.toLowerCase().includes("quota") ||
-      errorMessage.toLowerCase().includes("rate limit") ||
-      errorMessage.includes("429")
-    
-    if (isRateLimitError) {
-      return Response.json({ 
-        error: "AI kiểm tra ngữ pháp đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.",
-        errorType: "RATE_LIMIT"
-      }, { status: 429 })
-    }
-    
-    return Response.json({ 
-      error: "Failed to check grammar",
-      errorType: "GENERIC"
-    }, { status: 500 })
+  } catch (error) {
+    console.error("Error checking grammar:", errorMessage(error))
+    return aiErrorResponse(error, {
+      rateLimit: "AI kiểm tra ngữ pháp đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.",
+      generic: "Failed to check grammar",
+    })
   }
 }

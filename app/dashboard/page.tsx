@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { RadarChart } from "@/components/dashboard/radar-chart"
+import dynamic from "next/dynamic"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/components/auth/auth-provider"
 import { subscribeToTasks } from "@/lib/firebase-firestore"
@@ -25,6 +25,12 @@ import type { ProgressReportData, UserTarget, RepeatedSuggestion } from "@/types
 
 const CRITERIA_ORDER: CriterionKey[] = ["TR", "CC", "LR", "GRA"]
 
+// Recharts is heavy; load the chart only when this view renders it
+const RadarChart = dynamic(() => import("@/components/dashboard/radar-chart").then((m) => m.RadarChart), {
+  ssr: false,
+  loading: () => <div className="h-[300px] animate-pulse rounded-md bg-muted/40" aria-hidden="true" />,
+})
+
 // Criteria full names for better clarity
 const CRITERIA_NAMES = {
   TR: "Task Response",
@@ -33,13 +39,19 @@ const CRITERIA_NAMES = {
   GRA: "Grammar & Accuracy"
 }
 
+// Firestore Timestamps have toDate(); anything else is parsed as a date string
+const toDate = (value: unknown): Date =>
+  typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function"
+    ? (value.toDate() as Date)
+    : new Date(value as string)
+
 const formatTimestamp = (value?: TaskDocument["updatedAt"] | TaskDocument["createdAt"]) => {
   if (!value) {
     return "—"
   }
 
   try {
-    const date = "toDate" in (value as any) ? (value as any).toDate() : new Date(value as unknown as string)
+    const date = toDate(value)
     return new Intl.DateTimeFormat("en", {
       month: "short",
       day: "numeric",
@@ -47,7 +59,7 @@ const formatTimestamp = (value?: TaskDocument["updatedAt"] | TaskDocument["creat
       minute: "2-digit",
     }).format(date)
   } catch (error) {
-    console.error("[v0] Failed to format dashboard timestamp:", error)
+    console.error("Failed to format dashboard timestamp:", error)
     return "—"
   }
 }
@@ -71,10 +83,10 @@ const toDayString = (value?: TaskDocument["updatedAt"] | TaskDocument["createdAt
   }
 
   try {
-    const date = "toDate" in (value as any) ? (value as any).toDate() : new Date(value as unknown as string)
+    const date = toDate(value)
     return date.toISOString().slice(0, 10)
   } catch (error) {
-    console.error("[v0] Failed to normalise day string:", error)
+    console.error("Failed to normalise day string:", error)
     return null
   }
 }
@@ -147,7 +159,7 @@ export default function DashboardPage() {
         setLoadError(null)
       },
       (error) => {
-        console.error("[v0] Dashboard task subscription error:", error)
+        console.error("Dashboard task subscription error:", error)
         setTasks([])
         setIsLoading(false)
         setLoadError("We couldn't load your latest progress. Please try again later.")
@@ -191,7 +203,6 @@ export default function DashboardPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId: user.uid,
             dateRange: 30,
             targetBand: userTarget?.targetOverallBand
           }),
@@ -623,7 +634,7 @@ export default function DashboardPage() {
                   </div>
                 ) : recentActivity.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    You haven't submitted any tasks yet. Create a new task to see your progress here.
+                    You haven&apos;t submitted any tasks yet. Create a new task to see your progress here.
                   </p>
                 ) : (
                   <div className="space-y-4">

@@ -1,5 +1,6 @@
 "use client"
 
+import { titledError, type GrammarIssue, type TitledError } from "@/types/practice"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,7 @@ export function GrammarChecker() {
   const { toast } = useToast()
   const [input, setInput] = useState("")
   const [isChecking, setIsChecking] = useState(false)
-  const [issues, setIssues] = useState<any[]>([])
+  const [issues, setIssues] = useState<GrammarIssue[]>([])
 
   const handleCheck = async () => {
     setIsChecking(true)
@@ -29,9 +30,7 @@ export function GrammarChecker() {
       if (!response.ok) {
         // Check for rate limit errors
         if (response.status === 429 || result?.errorType === "RATE_LIMIT") {
-          const error: any = new Error(result?.error || "AI kiểm tra ngữ pháp đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.")
-          error.title = "Vượt giới hạn sử dụng"
-          throw error
+          throw titledError(result?.error || "AI kiểm tra ngữ pháp đang vượt giới hạn sử dụng. Vui lòng thử lại sau vài phút.", "Vượt giới hạn sử dụng")
         } else {
           throw new Error(result?.error || "Failed to check grammar. Please try again.")
         }
@@ -40,8 +39,9 @@ export function GrammarChecker() {
       if (result.issues) {
         setIssues(result.issues)
       }
-    } catch (error: any) {
-      console.error("[v0] Error checking grammar:", error)
+    } catch (caught) {
+      const error = caught as TitledError
+      console.error("Error checking grammar:", error)
       toast({
         title: error?.title || "Error",
         description: error?.message || "Failed to check grammar. Please try again.",
@@ -123,7 +123,7 @@ export function GrammarChecker() {
           <CardContent>
             {issues.length === 0 ? (
               <div className="flex items-center justify-center min-h-[400px] text-muted-foreground text-center">
-                <p>Enter text and click "Check Grammar" to see issues</p>
+                <p>Enter text and click &quot;Check Grammar&quot; to see issues</p>
               </div>
             ) : (
               <div className="space-y-4 max-h-[400px] overflow-y-auto">

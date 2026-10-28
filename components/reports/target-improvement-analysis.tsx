@@ -27,13 +27,11 @@ interface ImprovementAnalysis {
 }
 
 interface TargetImprovementAnalysisProps {
-  userId: string
   targetBand: number
   recentSubmissions: RecentSubmission[]
 }
 
 export function TargetImprovementAnalysis({ 
-  userId, 
   targetBand,
   recentSubmissions 
 }: TargetImprovementAnalysisProps) {

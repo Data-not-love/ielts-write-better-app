@@ -2,7 +2,6 @@ import { guardAiRequest } from "@/lib/ai-guard"
 import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
-import { withRateLimit } from "@/lib/server-rate-limiter"
 import { parseVisual, visualToText } from "@/lib/task1-visual"
 
 export const maxDuration = 60
@@ -75,8 +74,7 @@ Remember: Write ONLY the essay, no additional commentary.`
 
     let result
     try {
-      result = await withRateLimit(() =>
-        retryWithBackoff(
+      result = await retryWithBackoff(
           () => model.generateContent({
             contents: [
               {
@@ -91,7 +89,6 @@ Remember: Write ONLY the essay, no additional commentary.`
           }),
           GEMINI_RETRY_CONFIG
         )
-      )
     } catch (apiError) {
       console.error("[generate-sample] Gemini API error:", apiError)
       

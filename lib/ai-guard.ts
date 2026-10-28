@@ -48,21 +48,33 @@ async function applyLimit(kind: "user" | "demo", key: string): Promise<Response 
   }
 }
 
-/** Requires a signed-in user and applies the per-user limit. Returns an error response, or null to proceed. */
-export async function guardAiRequest(req: Request): Promise<Response | null> {
-  let userId: string
+/**
+ * Requires a signed-in user and applies the per-user limit.
+ * Returns the user's id, or the error response to send instead.
+ */
+export async function guardAiUser(req: Request): Promise<{ uid: string; denied: null } | { uid: null; denied: Response }> {
+  let uid: string
   try {
-    userId = await requireUserId(req)
+    uid = await requireUserId(req)
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      return Response.json(
-        { error: "Vui lòng đăng nhập để sử dụng tính năng AI.", errorType: "UNAUTHORIZED" },
-        { status: 401 },
-      )
+      return {
+        uid: null,
+        denied: Response.json(
+          { error: "Vui lòng đăng nhập để sử dụng tính năng AI.", errorType: "UNAUTHORIZED" },
+          { status: 401 },
+        ),
+      }
     }
     throw error
   }
-  return applyLimit("user", userId)
+  const limited = await applyLimit("user", uid)
+  return limited ? { uid: null, denied: limited } : { uid, denied: null }
+}
+
+/** Same as guardAiUser for routes that don't need the user id. Returns an error response, or null to proceed. */
+export async function guardAiRequest(req: Request): Promise<Response | null> {
+  return (await guardAiUser(req)).denied
 }
 
 /** Per-IP limit for the public homepage demo. Returns an error response, or null to proceed. */

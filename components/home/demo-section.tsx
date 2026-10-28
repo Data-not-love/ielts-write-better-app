@@ -1,5 +1,6 @@
 "use client"
 
+import type { TaskFeedback } from "@/types/tasks"
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,7 +18,7 @@ In conclusion, despite some added complexity, technology has predominantly simpl
 export function DemoSection() {
   const [text, setText] = useState(sampleEssay)
   const [isScoring, setIsScoring] = useState(false)
-  const [feedback, setFeedback] = useState<any>(null)
+  const [feedback, setFeedback] = useState<TaskFeedback | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleRunDemo = async () => {
@@ -49,7 +50,7 @@ export function DemoSection() {
         setError("No feedback received. Please try again.")
       }
     } catch (error) {
-      console.error("[v0] Error scoring essay:", error)
+      console.error("Error scoring essay:", error)
       setError("Failed to score essay. Please check your connection and try again.")
     } finally {
       setIsScoring(false)

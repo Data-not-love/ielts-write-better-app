@@ -3,7 +3,6 @@ import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { NextRequest } from "next/server"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
-import { withRateLimit } from "@/lib/server-rate-limiter"
 
 export const maxDuration = 60
 
@@ -98,13 +97,10 @@ Suggest one specific exercise or technique the student can use immediately to pr
 - Be encouraging but realistic about what needs improvement
 - Keep your response concise but comprehensive (300-400 words)`
 
-    // Use server-side rate limiting to prevent quota exhaustion
-    const result = await withRateLimit(() =>
-      retryWithBackoff(
+    const result = await retryWithBackoff(
         () => model.generateContent(prompt),
         GEMINI_RETRY_CONFIG
       )
-    )
     
     const response = result.response
     const suggestions = response.text()

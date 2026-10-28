@@ -1,3 +1,5 @@
+import { isRateLimitError } from "./ai-errors.ts"
+
 /**
  * Retry utility with exponential backoff for handling rate limits and quota errors
  */
@@ -19,14 +21,17 @@ const DEFAULT_CONFIG: Required<RetryConfig> = {
 /**
  * Check if an error means the model is temporarily overloaded (503 / high demand)
  */
-export function isModelOverloadedError(error: any): boolean {
-  if (!error) return false
+type ErrorLike = { status?: number; statusCode?: number; response?: { status?: number }; message?: string }
 
-  if (error.status === 503 || error.statusCode === 503 || error.response?.status === 503) {
+export function isModelOverloadedError(error: unknown): boolean {
+  if (!error) return false
+  const e = error as ErrorLike
+
+  if (e.status === 503 || e.statusCode === 503 || e.response?.status === 503) {
     return true
   }
 
-  const errorString = (error.message || error.toString() || "").toLowerCase()
+  const errorString = (e.message || String(error)).toLowerCase()
 
   return (
     errorString.includes("503") ||
@@ -40,28 +45,9 @@ export function isModelOverloadedError(error: any): boolean {
  * Check if an error is retryable (429 Too Many Requests, quota errors, or temporary overload).
  * Quotas are per model, so these errors also mean a different model may still succeed.
  */
-export function isRetryableError(error: any): boolean {
+export function isRetryableError(error: unknown): boolean {
   if (!error) return false
-
-  if (isModelOverloadedError(error)) {
-    return true
-  }
-
-  // Check for 429 status code
-  if (error.status === 429 || error.response?.status === 429) {
-    return true
-  }
-
-  // Check for quota-related error messages
-  const errorMessage = error.message || error.toString() || ""
-  const errorString = errorMessage.toLowerCase()
-
-  return (
-    errorString.includes("too many requests") ||
-    errorString.includes("quota") ||
-    errorString.includes("rate limit") ||
-    errorString.includes("429")
-  )
+  return isModelOverloadedError(error) || isRateLimitError(error)
 }
 
 /**
@@ -90,7 +76,7 @@ export async function retryWithBackoff<T>(
   config: RetryConfig = {}
 ): Promise<T> {
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
-  let lastError: any
+  let lastError: unknown
 
   for (let attempt = 0; attempt <= finalConfig.maxRetries; attempt++) {
     try {

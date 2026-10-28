@@ -11,7 +11,7 @@ import { getTask } from "@/lib/firebase-firestore"
 import type { TaskDocument } from "@/types/tasks"
 import { useToast } from "@/hooks/use-toast"
 import { authFetch } from "@/lib/auth-fetch"
-import { Task1VisualView } from "@/components/tasks/task1-visual"
+import { Task1VisualView } from "@/components/tasks/task1-visual-lazy"
 
 interface CompareVersionsProps {
   taskId: string

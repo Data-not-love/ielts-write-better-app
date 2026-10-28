@@ -42,7 +42,7 @@ export function ProfileSettings() {
 
   const [hasChanges, setHasChanges] = useState(false)
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = <K extends keyof typeof formData>(field: K, value: (typeof formData)[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setHasChanges(true)
   }

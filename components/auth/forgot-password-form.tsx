@@ -57,7 +57,7 @@ export function ForgotPasswordForm() {
           {submitted ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                We've sent a password reset link to <strong>{email}</strong>. Please check your inbox and follow the
+                We&apos;ve sent a password reset link to <strong>{email}</strong>. Please check your inbox and follow the
                 instructions.
               </p>
               <Link href="/auth/login">

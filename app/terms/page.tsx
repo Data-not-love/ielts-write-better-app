@@ -29,7 +29,7 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-4">1. Acceptance of Terms</h2>
               <p className="text-muted-foreground mb-4">
-                By accessing and using IELTS WriteBetter ("the Service"), you accept and agree to be bound by
+                By accessing and using IELTS WriteBetter (&quot;the Service&quot;), you accept and agree to be bound by
                 the terms and provision of this agreement. If you do not agree to these terms, please do not
                 use the Service.
               </p>
@@ -86,7 +86,7 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-4">7. Limitation of Liability</h2>
               <p className="text-muted-foreground mb-4">
-                The Service is provided "as is" without warranties of any kind. We shall not be liable for
+                The Service is provided &quot;as is&quot; without warranties of any kind. We shall not be liable for
                 any indirect, incidental, special, consequential, or punitive damages resulting from your
                 use of or inability to use the Service.
               </p>

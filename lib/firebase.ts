@@ -1,8 +1,9 @@
 import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
-import { getStorage } from "firebase/storage"
 
+// Firebase web config is public by design (it ships to every browser); access is
+// enforced by firestore.rules and the API routes, not by keeping this secret.
 const firebaseConfig = {
   apiKey: "AIzaSyBAwSiZLjScVY7eajey-Y_OGJU1bs5BF6A",
   authDomain: "ieltswriting-36004.firebaseapp.com",
@@ -16,4 +17,3 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
-export const storage = getStorage(app)

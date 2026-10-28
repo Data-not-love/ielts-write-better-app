@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { authFetch } from "@/lib/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Target, Save, Loader2 } from "lucide-react"
 import type { UserTarget } from "@/types/reports"

@@ -5,23 +5,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { authFetch } from "@/lib/auth-fetch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Select } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TrendingUp, TrendingDown, AlertCircle, Loader2, Filter, ChevronRight } from "lucide-react"
-import { RadarChart } from "@/components/dashboard/radar-chart"
-import { useAuth } from "@/lib/firebase-auth"
+import dynamic from "next/dynamic"
+import { useAuth } from "@/components/auth/auth-provider"
 import { OverviewCards } from "./overview-cards"
 import { TargetSetting } from "./target-setting"
-import { SkillPriorityVisualization } from "./skill-priority-visualization"
 import { TargetRecommendations } from "./target-recommendations"
 import { RecentSubmissionsTable } from "./recent-submissions-table"
-import { PerformanceComparisonChart } from "./performance-comparison-chart"
 import { GapToTargetTable } from "./gap-to-target-table"
 import { TargetImprovementAnalysis } from "./target-improvement-analysis"
 import { Markdown } from "@/components/ui/markdown"
 import type { ProgressReportData, UserTarget, CommonIssue } from "@/types/reports"
 
 // Criteria full names for better clarity
+// Recharts is heavy; load the charts only when the report renders them
+const RadarChart = dynamic(() => import("@/components/dashboard/radar-chart").then((m) => m.RadarChart), {
+  ssr: false,
+  loading: () => <div className="h-[300px] animate-pulse rounded-md bg-muted/40" aria-hidden="true" />,
+})
+const PerformanceComparisonChart = dynamic(() => import("./performance-comparison-chart").then((m) => m.PerformanceComparisonChart), {
+  ssr: false,
+  loading: () => <div className="h-[300px] animate-pulse rounded-md bg-muted/40" aria-hidden="true" />,
+})
+
 const CRITERIA_NAMES = {
   TR: "Task Response",
   CC: "Coherence & Cohesion",
@@ -73,6 +80,8 @@ export function ProgressReports({ userId: propUserId }: ProgressReportsProps = {
     }
 
     fetchReportData()
+    // fetchReportData reads exactly these values; it is re-created every render, so it is not a dependency
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, dateRange, taskTypeFilter, userTarget])
 
   async function fetchReportData() {
@@ -271,7 +280,6 @@ export function ProgressReports({ userId: propUserId }: ProgressReportsProps = {
               {/* Target Improvement Analysis - Recent Submissions */}
               {userTarget && reportData.recentSubmissions && reportData.recentSubmissions.length > 0 && (
                 <TargetImprovementAnalysis
-                  userId={userId}
                   targetBand={userTarget.targetOverallBand}
                   recentSubmissions={reportData.recentSubmissions}
                 />

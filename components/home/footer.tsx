@@ -21,8 +21,7 @@ export function Footer() {
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement newsletter subscription
-    console.log("Subscribe email:", email)
+    // TODO: Implement newsletter subscription. Nothing is stored or sent yet.
     setEmail("")
   }
 

@@ -47,7 +47,7 @@ const CRITERIA_COLORS: Record<CriterionKey, { stroke: string; fill: string }> = 
   }
 }
 
-export function RadarChart({ scores, target = 7.5, beforeScores, isLoading }: RadarChartProps) {
+export function RadarChart({ scores, isLoading }: RadarChartProps) {
   if (isLoading) {
     return (
       <div className="flex h-[300px] w-full items-center justify-center text-sm text-muted-foreground">

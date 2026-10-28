@@ -10,9 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Save, Send } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
-import { createTask } from "@/lib/firebase-firestore"
-import { Task1VisualView } from "@/components/tasks/task1-visual"
-import type { TaskFeedback } from "@/types/tasks"
+import { Task1VisualView } from "@/components/tasks/task1-visual-lazy"
 import { authFetch } from "@/lib/auth-fetch"
 
 import {
@@ -39,6 +37,8 @@ const task2Prompts = [
   { id: "5", title: "Education Systems", description: "Compare traditional vs modern education approaches" },
   { id: "6", title: "Environmental Issues", description: "Debate solutions to climate change" },
 ]
+
+type SubmitError = Error & { title?: string; retryable?: boolean }
 
 type AIGeneratedPrompt = {
   id: string
@@ -94,21 +94,43 @@ export function NewTaskForm() {
   const resolvedPrompt = customPrompt.trim() || selectedPromptMeta?.description || ""
   // The visual belongs to the AI prompt as generated; editing the prompt text deselects it
   const activeVisual = taskType === "Task 1" && selectedPrompt === "ai-generated" ? aiGeneratedPrompt?.visual : undefined
-  const resolvedTitle = aiGeneratedPrompt?.title || 
+  const resolvedTitle = (selectedPrompt === "ai-generated" ? aiGeneratedPrompt?.title : undefined) ||
     promptTitle ||
     selectedPromptMeta?.title ||
     (resolvedPrompt ? `${taskType} - ${resolvedPrompt.slice(0, 50)}${resolvedPrompt.length > 50 ? "…" : ""}` : `${taskType} Submission`)
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to save a draft.", variant: "destructive" })
+      return
+    }
     setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
-      toast({
-        title: "Draft saved",
-        description: "Your task has been saved as a draft.",
+    try {
+      const res = await authFetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: resolvedTitle,
+          promptText: resolvedPrompt,
+          promptId: selectedPrompt || null,
+          taskType,
+          essayText: response,
+          ...(activeVisual != null ? { visual: activeVisual } : {}),
+        }),
       })
-      router.push("/tasks")
-    }, 1000)
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.taskId) throw new Error(data?.error || "Không thể lưu bản nháp. Vui lòng thử lại.")
+      toast({ title: "Draft saved", description: "Your task has been saved as a draft." })
+      router.push(`/tasks/${data.taskId}`)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Không thể lưu bản nháp. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleSubmit = () => {
@@ -137,7 +159,7 @@ export function NewTaskForm() {
         return
       }
 
-      // Call the new essay evaluation API
+      // Scores the essay and saves the task server-side in one request
       const scoringResponse = await authFetch("/api/essays/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,15 +167,14 @@ export function NewTaskForm() {
           essayText: response,
           taskType,
           promptText: resolvedPrompt,
-          userId: user.uid,
-          promptId: selectedPrompt || null,
           ...(activeVisual != null ? { visual: activeVisual } : {}),
+          save: { mode: "create", title: resolvedTitle, promptId: selectedPrompt || null },
         }),
       })
 
       const data = await scoringResponse.json().catch(() => null)
 
-      if (!scoringResponse.ok || !data?.feedback) {
+      if (!scoringResponse.ok || !data?.taskId) {
         // Check for rate limit errors
         let errorTitle = "Lỗi chấm điểm"
         let errorMessage = data?.error || "Không thể chấm điểm bài viết. Vui lòng thử lại."
@@ -163,40 +184,22 @@ export function NewTaskForm() {
           errorMessage = data?.error || "AI chấm điểm đang vượt giới hạn sử dụng. Vui lòng thử lại sau 1-2 phút."
         }
         
-        const error: any = new Error(errorMessage)
+        const error: SubmitError = new Error(errorMessage)
         error.title = errorTitle
         error.retryable = scoringResponse.status === 429
         throw error
       }
 
-      const scoringData = data
-
-      const feedback: TaskFeedback = scoringData.feedback
-
-      const taskId = await createTask(user.uid, {
-        title: resolvedTitle,
-        prompt: resolvedPrompt,
-        promptId: selectedPrompt || null,
-        // Firestore rejects undefined, so the field is only present for Task 1 AI prompts
-        ...(activeVisual != null ? { visual: activeVisual } : {}),
-        taskType,
-        response,
-        wordCount,
-        status: "scored",
-        overallBand: feedback.overallBand,
-        summary: feedback.summary,
-        feedback,
-        actionItems: feedback.actionItems,
-        revisionId: scoringData.revisionId,
-      })
+      const taskId: string = data.taskId
 
       toast({
         title: "Nhiệm vụ đã được gửi",
         description: "Bài viết của bạn đã được chấm điểm thành công.",
       })
       router.push(`/tasks/${taskId}`)
-    } catch (error: any) {
-      console.error("[v0] Error submitting task:", error)
+    } catch (caught) {
+      const error = caught as SubmitError
+      console.error("Error submitting task:", error)
       
       // Provide more helpful error messages
       let errorDescription = error?.message || "Không thể gửi nhiệm vụ. Vui lòng thử lại."

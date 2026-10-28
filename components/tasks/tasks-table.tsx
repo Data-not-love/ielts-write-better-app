@@ -38,7 +38,7 @@ const formatTimestamp = (value?: TaskDocument["updatedAt"]) => {
       minute: "2-digit",
     }).format(date)
   } catch (error) {
-    console.error("[v0] Failed to format timestamp:", error)
+    console.error("Failed to format timestamp:", error)
     return "—"
   }
 }
@@ -60,6 +60,8 @@ export function TasksTable() {
     }
 
     if (!user) {
+      // Reset when signed out; the subscription below owns this state otherwise
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTasks([])
       setIsLoading(false)
       setLoadError(null)
@@ -77,7 +79,7 @@ export function TasksTable() {
         setLoadError(null)
       },
       (error) => {
-        console.error("[v0] Task subscription error:", error)
+        console.error("Task subscription error:", error)
         setTasks([])
         setIsLoading(false)
         setLoadError("We couldn't load your tasks. Please try again.")
