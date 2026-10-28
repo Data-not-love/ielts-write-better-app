@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { compareChatModels, isChatModelId } from "@/lib/gemini-models"
 
 const GEMINI_MODELS_ENDPOINT = "https://generativelanguage.googleapis.com/v1/models"
 
@@ -51,7 +52,8 @@ export async function GET() {
           description: model.description ?? "",
         }
       })
-      .filter((model) => model.id)
+      .filter((model) => isChatModelId(model.id))
+      .sort((a, b) => compareChatModels(a.id, b.id))
 
     if (models.length === 0) {
       return NextResponse.json(
@@ -60,7 +62,8 @@ export async function GET() {
       )
     }
 
-    const defaultModelId = models.find((model) => model.id.includes("flash"))?.id ?? models[0]?.id
+    // Models are sorted best-first, so the default is always the newest available model
+    const defaultModelId = models[0].id
 
     return NextResponse.json({ models, defaultModelId })
   } catch (error) {
