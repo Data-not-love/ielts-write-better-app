@@ -287,6 +287,20 @@
   --chart-2: oklch(0.72 0.11 250);
 }
 
+/* Green would collide with chart-3 (also green), which moves to blue ink */
+:root[data-accent="green"] {
+  --primary: oklch(0.5 0.13 150);
+  --ring: oklch(0.5 0.13 150);
+  --chart-1: oklch(0.5 0.13 150);
+  --chart-3: oklch(0.48 0.14 255);
+}
+:root.dark[data-accent="green"] {
+  --primary: oklch(0.78 0.14 150);
+  --ring: oklch(0.78 0.14 150);
+  --chart-1: oklch(0.78 0.14 150);
+  --chart-3: oklch(0.72 0.11 250);
+}
+
 :root[data-accent="purple"] {
   --primary: oklch(0.49 0.18 300);
   --ring: oklch(0.49 0.18 300);

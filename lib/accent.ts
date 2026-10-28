@@ -6,6 +6,7 @@ export const ACCENTS = [
   { id: "yellow", label: "Vàng", swatch: "oklch(0.53 0.11 75)" },
   { id: "red", label: "Đỏ", swatch: "oklch(0.5 0.19 27)" },
   { id: "purple", label: "Tím", swatch: "oklch(0.49 0.18 300)" },
+  { id: "green", label: "Xanh lá", swatch: "oklch(0.5 0.13 150)" },
 ] as const
 
 export type AccentId = (typeof ACCENTS)[number]["id"]
