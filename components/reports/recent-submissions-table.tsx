@@ -82,11 +82,11 @@ export function RecentSubmissionsTable({ submissions }: RecentSubmissionsTablePr
                     <span className="font-semibold text-lg">{submission.overallBand.toFixed(1)}</span>
                   </td>
                   <td className="py-3 px-2">
-                    <div className="flex flex-col gap-1">
-                      <Badge variant="secondary" className="text-xs w-fit">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs w-fit whitespace-nowrap">
                         {CRITERIA_NAMES[submission.weakestSkill]}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground tabular-nums">
                         {submission.weakestSkillScore.toFixed(1)}
                       </span>
                     </div>
