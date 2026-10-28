@@ -27,11 +27,10 @@ export default function HomePage() {
               IELTS Writing · Task 1 &amp; Task 2
             </p>
             <h1 className="mb-6 text-4xl leading-[1.08] md:text-6xl text-balance">
-              Viết bài, nhận band điểm như một giám khảo chấm.
+              Viết bài, nhận band điểm như một giám khảo thật.
             </h1>
             <p className="mb-8 max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty">
-              Mỗi bài được chấm theo bốn tiêu chí chính thức, kèm nhận xét từng câu và bản viết lại để bạn sửa ngay ở bản
-              nháp sau.
+              Mỗi bài được chấm theo bốn tiêu chí chính thức chuẩn của IDP và BC, kèm nhận xét từng câu và bản viết lại để bạn sửa ngay và học hỏi kinh nghiệm.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/tasks/new">
