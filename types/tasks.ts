@@ -42,6 +42,8 @@ export interface TaskDocument {
   prompt?: string
   promptId?: string | null
   taskType?: string
+  /** Task 1 chart/table/map/process data (lib/task1-visual.ts, versioned). Validate before use. */
+  visual?: unknown
   response?: string
   status?: string
   overallBand?: number

@@ -3,6 +3,7 @@ import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import { getGeminiModel } from "@/lib/gemini-native"
 import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
 import { withRateLimit } from "@/lib/server-rate-limiter"
+import { parseVisual, visualToText } from "@/lib/task1-visual"
 
 export const maxDuration = 60
 
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
     const denied = await guardAiRequest(req)
     if (denied) return denied
 
-    const { promptText, taskType, targetBand } = await req.json()
+    const { promptText, taskType, targetBand, visual: rawVisual } = await req.json()
 
     if (!promptText || !taskType) {
       return Response.json({ error: "Missing required fields: promptText and taskType" }, { status: 400 })
@@ -22,6 +23,14 @@ export async function POST(req: Request) {
       taskType: [taskType, INPUT_LIMITS.short],
     })
     if (invalid) return invalid
+
+    // A Task 1 sample must describe the same data the student saw
+    let visualData = ""
+    if (rawVisual != null) {
+      const { visual, error } = parseVisual(rawVisual)
+      if (!visual) return Response.json({ error: `Invalid visual: ${error}` }, { status: 400 })
+      visualData = visualToText(visual)
+    }
 
     const model = getGeminiModel()
 
@@ -61,7 +70,7 @@ Write ONLY the essay text without any meta-commentary, explanations, or feedback
     const userPrompt = `Write a band ${band} IELTS ${taskType} essay for the following prompt:
 
 ${promptText}
-
+${visualData ? `\nVISUAL DATA (describe this exactly; include an overview and accurate key figures):\n${visualData}\n` : ""}
 Remember: Write ONLY the essay, no additional commentary.`
 
     let result

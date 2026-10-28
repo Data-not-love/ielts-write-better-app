@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { authFetch } from "@/lib/auth-fetch"
+import { Task1VisualView } from "@/components/tasks/task1-visual"
 import {
   Collapsible,
   CollapsibleContent,
@@ -100,6 +101,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           promptText: task.prompt,
           userId: user.uid,
           promptId: task.promptId,
+          ...(task.visual != null ? { visual: task.visual } : {}),
         }),
       })
 
@@ -468,6 +470,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
               <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg mt-2">
                 <strong>Prompt:</strong> {task.prompt || "No prompt provided"}
               </div>
+              {task.visual != null && <Task1VisualView visual={task.visual} className="mt-3" />}
             </CardHeader>
             <CardContent className="space-y-4">
               {isEditing ? (

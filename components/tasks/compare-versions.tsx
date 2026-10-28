@@ -11,6 +11,7 @@ import { getTask } from "@/lib/firebase-firestore"
 import type { TaskDocument } from "@/types/tasks"
 import { useToast } from "@/hooks/use-toast"
 import { authFetch } from "@/lib/auth-fetch"
+import { Task1VisualView } from "@/components/tasks/task1-visual"
 
 interface CompareVersionsProps {
   taskId: string
@@ -78,6 +79,7 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
                   promptText: taskData.prompt,
                   taskType: taskData.taskType || "Task 2",
                   targetBand: 7.0,
+                  ...(taskData.visual != null ? { visual: taskData.visual } : {}),
                 }),
               })
 
@@ -247,6 +249,7 @@ export function CompareVersions({ taskId }: CompareVersionsProps) {
             <div className="text-sm leading-relaxed whitespace-pre-wrap">
               {task.prompt}
             </div>
+            {task.visual != null && <Task1VisualView visual={task.visual} className="mt-4" />}
           </CardContent>
         </Card>
       )}

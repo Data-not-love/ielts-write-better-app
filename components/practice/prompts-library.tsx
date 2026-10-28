@@ -12,11 +12,13 @@ import { toast } from "sonner"
 import { authFetch } from "@/lib/auth-fetch"
 import { IELTS_TOPICS, tagsIncludeTopic } from "@/lib/ielts-topics"
 import { CATEGORY_GROUPS, categoriesForTask } from "@/lib/ielts-categories"
+import { Task1VisualView } from "@/components/tasks/task1-visual"
 
 type Prompt = {
   id: string
   type: "Task 1" | "Task 2"
   category?: string
+  visual?: unknown // Task 1 only; validated again when rendered
   title: string
   description: string
   tags: string[]
@@ -249,6 +251,16 @@ export function PromptsLibrary() {
                 <CardDescription className="line-clamp-2">{prompt.description}</CardDescription>
               </CardHeader>
               <CardContent>
+                {prompt.visual != null && (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewPrompt(prompt)}
+                    className="mb-4 block w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`Preview ${prompt.title}`}
+                  >
+                    <Task1VisualView visual={prompt.visual} compact />
+                  </button>
+                )}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {prompt.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="text-xs">
@@ -278,16 +290,18 @@ export function PromptsLibrary() {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewPrompt} onOpenChange={() => setPreviewPrompt(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
               <Badge variant="outline">{previewPrompt?.type}</Badge>
+              {previewPrompt?.category && <Badge variant="secondary">{previewPrompt.category}</Badge>}
             </div>
             <DialogTitle>{previewPrompt?.title}</DialogTitle>
             <DialogDescription className="text-base leading-relaxed pt-4">
               {previewPrompt?.description}
             </DialogDescription>
           </DialogHeader>
+          {previewPrompt?.visual != null && <Task1VisualView visual={previewPrompt.visual} />}
           <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={() => setPreviewPrompt(null)} className="flex-1 bg-transparent">
               Close

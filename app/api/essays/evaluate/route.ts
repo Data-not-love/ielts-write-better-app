@@ -4,6 +4,7 @@ import { retryWithBackoff, GEMINI_RETRY_CONFIG } from "@/lib/retry-utils"
 import { withRateLimit } from "@/lib/server-rate-limiter"
 import { INPUT_LIMITS, validateTextFields } from "@/lib/input-limits"
 import type { LineLevelFeedback, TaskFeedback } from "@/types/tasks"
+import { parseVisual, visualToText } from "@/lib/task1-visual"
 
 export const maxDuration = 60
 
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
     const denied = await guardAiRequest(req)
     if (denied) return denied
 
-    const { promptText, taskType, essayText, userId, promptId } = await req.json()
+    const { promptText, taskType, essayText, userId, promptId, visual: rawVisual } = await req.json()
 
     if (!essayText || !taskType) {
       return Response.json({ error: "Missing required fields: essayText and taskType" }, { status: 400 })
@@ -24,6 +25,15 @@ export async function POST(req: Request) {
       promptText: [promptText, INPUT_LIMITS.prompt],
     })
     if (invalid) return invalid
+
+    // Task 1 visual data, when present, is the ground truth the essay is checked against.
+    // It comes from the client (the user's own task), so it is validated like any input.
+    let visualData = ""
+    if (rawVisual != null) {
+      const { visual, error } = parseVisual(rawVisual)
+      if (!visual) return Response.json({ error: `Invalid visual: ${error}` }, { status: 400 })
+      visualData = visualToText(visual)
+    }
 
     const model = getGeminiModel()
 
@@ -87,11 +97,21 @@ Return your response as a JSON object with this exact structure:
   ]
 }
 
-IMPORTANT: Provide line-level feedback for any errors or areas for improvement found in the essay. If the essay is exceptionally well-written with no significant errors, the line_level_feedback array may be empty, but this should be rare.`
+IMPORTANT: Provide line-level feedback for any errors or areas for improvement found in the essay. If the essay is exceptionally well-written with no significant errors, the line_level_feedback array may be empty, but this should be rare.${
+      visualData
+        ? `
+
+TASK 1 DATA ACCURACY (the exact data the candidate saw is given below the prompt):
+- Treat the VISUAL DATA as ground truth. Check every figure, ranking, trend and comparison the essay states against it.
+- In TR (Task Achievement): reward a clear overview of the main trends or stages; penalize misreported figures, wrong trends or rankings, missing key features, and no overview. Mention each data error by name in TR "areas_for_improvement".
+- Add a "task_response" line-level feedback item for every sentence that misreports the data, with a suggested rewrite that uses the correct figures.
+- Approximate figures ("about a third", "just under 40%") are acceptable when they are reasonable readings of the data.`
+        : ""
+    }`
 
     const userPrompt = `PROMPT (This is what the essay MUST respond to):
 ${promptText || "No specific prompt provided"}
-
+${visualData ? `\nVISUAL DATA (exactly what the candidate saw):\n${visualData}\n` : ""}
 ESSAY:
 ${essayText}
 

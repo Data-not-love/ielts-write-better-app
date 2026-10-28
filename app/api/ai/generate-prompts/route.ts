@@ -6,21 +6,37 @@ import { withRateLimit } from "@/lib/server-rate-limiter"
 import { z } from "zod"
 import { IELTS_TOPICS, toIeltsTopic, type IeltsTopic } from "@/lib/ielts-topics"
 import { categoriesForTask, taskOfCategory, toIeltsCategory, type IeltsCategory } from "@/lib/ielts-categories"
+import { CATEGORY_BY_KIND, fromGenerated, parseVisual, visualGenerationSchema } from "@/lib/task1-visual"
 
 export const maxDuration = 60
 
-const promptSchema = z.object({
-  prompts: z.array(
-    z.object({
-      id: z.string(),
-      type: z.enum(["Task 1", "Task 2"]),
-      category: z.string(),
-      title: z.string(),
-      description: z.string(),
-      tags: z.array(z.string()),
-    })
-  ),
+const promptItemSchema = z.object({
+  id: z.string(),
+  type: z.enum(["Task 1", "Task 2"]),
+  category: z.string(),
+  title: z.string(),
+  description: z.string(),
+  tags: z.array(z.string()),
+  visual: visualGenerationSchema.optional().describe("Required for Task 1 prompts, omitted for Task 2"),
 })
+
+const promptSchemaFor = (count: number) => z.object({ prompts: z.array(promptItemSchema).min(count).max(count) })
+
+// Visual data makes Task 1 prompts several times larger, so they are generated in smaller batches
+const MAX_TASK1_PROMPTS = 4
+
+const VISUAL_INSTRUCTIONS = `TASK 1 VISUALS (required for every Task 1 prompt):
+Every Task 1 prompt MUST include a "visual" holding the exact data the candidate will see. Set "kind" from the category and fill the matching block completely:
+- "Bar Charts" -> kind "bar", "Line Charts" -> kind "line": fill "barOrLine" (unit, 3-8 xLabels such as years or countries, 1-4 series with exactly one number per xLabel).
+- "Pie Charts" -> kind "pie": fill "pie" (1-2 pies, each labelled e.g. with a year, 3-6 slices whose values sum to exactly 100).
+- "Table Charts" -> kind "table": fill "table" (unit, 2-6 columns, 2-6 rows with exactly one cell per column; cells are strings such as "12.5").
+- "Mixed Charts" -> kind "mixed": fill "mixed.parts" with exactly 2 charts of different kinds, each with its own complete block.
+- "Process" -> kind "process": fill "process" (5-10 steps with 2-5 word labels, cyclic true for natural cycles).
+- "Map" -> kind "map": fill "map.before" and "map.after" (each a year label and 4-9 places, each placed at a different compass position). Show 3-5 clear changes between the two years.
+Never leave the matching block empty. The data must look like a real IELTS paper: realistic magnitudes, a clear overall trend, 2-3 notable features (a peak, a crossover, a largest/smallest category), and round-ish numbers.
+Decide the data first, then write the description from it: any count the description states (e.g. "three countries", "five stages") must equal the number of series, labels, slices, rows or steps in the visual. If unsure, leave the count out.
+The description must refer to the visual (e.g. "The bar chart below shows ...") and end with "Summarise the information by selecting and reporting the main features, and make comparisons where relevant."
+Task 2 prompts must NOT include a visual.`
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +45,8 @@ export async function POST(req: Request) {
 
     const { taskType, topics, categories, count } = await req.json()
 
-    const promptCount = Math.min(Math.max(Number(count) || 4, 1), 10)
+    const requestedCount = Math.min(Math.max(Number(count) || 4, 1), 10)
+    const promptCount = taskType === "Task 1" ? Math.min(requestedCount, MAX_TASK1_PROMPTS) : requestedCount
     // Only known topics reach the model; this also dedupes and fixes casing
     const cleanTopics = Array.isArray(topics)
       ? [...new Set(topics.map(toIeltsTopic).filter((t): t is IeltsTopic => t !== undefined))]
@@ -72,7 +89,7 @@ export async function POST(req: Request) {
         () =>
           generateObject({
             model: getGoogleModel(),
-            schema: promptSchema,
+            schema: promptSchemaFor(promptCount),
             prompt: `Generate ${promptCount} unique and diverse IELTS writing prompts.
 
 ${taskTypeInstruction}
@@ -96,26 +113,50 @@ Requirements:
 Ensure variety in:
 - Question types, within the allowed categories
 - Difficulty levels
-- Contemporary and relevant topics`,
+- Contemporary and relevant topics
+
+${selectedTaskType === "Task 2" ? "" : VISUAL_INSTRUCTIONS}`,
             temperature: 0.9,
+            // Thinking tokens count against this budget; visuals need the room
+            maxOutputTokens: 16_000,
           }),
         GEMINI_RETRY_CONFIG
       )
     )
 
     // Normalize tags and category to canonical names so client-side filtering matches;
-    // a known category also decides the task type, in case the model mislabels it
-    const prompts = object.prompts.map((p) => {
-      const category = toIeltsCategory(p.category)
-      return {
-        ...p,
-        type: category ? taskOfCategory(category) : p.type,
-        category: category ?? p.category,
-        tags: p.tags.map((tag) => toIeltsTopic(tag) ?? tag),
+    // a known category also decides the task type, in case the model mislabels it.
+    // Task 1 prompts must carry a valid visual (its kind then decides the category);
+    // ones without are dropped rather than retried, to save quota.
+    const dropped: string[] = []
+    const prompts = object.prompts.flatMap((p) => {
+      const { visual: rawVisual, ...rest } = p
+      let category = toIeltsCategory(p.category)
+      const type = category ? taskOfCategory(category) : p.type
+      const tags = p.tags.map((tag) => toIeltsTopic(tag) ?? tag)
+
+      if (type === "Task 2") {
+        return [{ ...rest, type, category: category ?? p.category, tags }]
       }
+
+      const { visual, error } = parseVisual(fromGenerated(rawVisual))
+      if (!visual) {
+        dropped.push(`${p.category}: ${error}`)
+        return []
+      }
+      category = toIeltsCategory(CATEGORY_BY_KIND[visual.kind])!
+      if (pickedCategories.length > 0 && !pickedCategories.includes(category)) {
+        dropped.push(`${p.category}: visual kind ${visual.kind} not in selected categories`)
+        return []
+      }
+      return [{ ...rest, type: "Task 1" as const, category, tags, visual }]
     })
 
-    return Response.json({ prompts })
+    if (dropped.length > 0) {
+      console.warn(`[generate-prompts] dropped ${dropped.length}/${object.prompts.length} Task 1 prompts:`, dropped)
+    }
+
+    return Response.json({ prompts, dropped: dropped.length })
   } catch (error: any) {
     console.error("[v0] Error generating prompts:", error)
     

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Loader2, Save, Send } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { createTask } from "@/lib/firebase-firestore"
+import { Task1VisualView } from "@/components/tasks/task1-visual"
 import type { TaskFeedback } from "@/types/tasks"
 import { authFetch } from "@/lib/auth-fetch"
 
@@ -45,6 +46,7 @@ type AIGeneratedPrompt = {
   title: string
   description: string
   tags: string[]
+  visual?: unknown // Task 1 chart/table/map/process data; validated when rendered and on the server
 }
 
 export function NewTaskForm() {
@@ -90,6 +92,8 @@ export function NewTaskForm() {
   
   // Use AI-generated prompt title if available, otherwise use selected prompt or generate from custom
   const resolvedPrompt = customPrompt.trim() || selectedPromptMeta?.description || ""
+  // The visual belongs to the AI prompt as generated; editing the prompt text deselects it
+  const activeVisual = taskType === "Task 1" && selectedPrompt === "ai-generated" ? aiGeneratedPrompt?.visual : undefined
   const resolvedTitle = aiGeneratedPrompt?.title || 
     promptTitle ||
     selectedPromptMeta?.title ||
@@ -143,6 +147,7 @@ export function NewTaskForm() {
           promptText: resolvedPrompt,
           userId: user.uid,
           promptId: selectedPrompt || null,
+          ...(activeVisual != null ? { visual: activeVisual } : {}),
         }),
       })
 
@@ -172,6 +177,8 @@ export function NewTaskForm() {
         title: resolvedTitle,
         prompt: resolvedPrompt,
         promptId: selectedPrompt || null,
+        // Firestore rejects undefined, so the field is only present for Task 1 AI prompts
+        ...(activeVisual != null ? { visual: activeVisual } : {}),
         taskType,
         response,
         wordCount,
@@ -317,6 +324,7 @@ export function NewTaskForm() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pb-8">
+            {activeVisual != null && <Task1VisualView visual={activeVisual} />}
             <Textarea
               value={response}
               onChange={(e) => setResponse(e.target.value)}
