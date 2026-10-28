@@ -26,26 +26,27 @@ const availableTopics: readonly string[] = IELTS_TOPICS
 
 export function PromptsLibrary() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<string>("all")
+  const [activeTab, setActiveTab] = useState<string>("Task 1")
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [previewPrompt, setPreviewPrompt] = useState<Prompt | null>(null)
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // Generate initial prompts on mount
+  // Generate a Task 1 + Task 2 mix on mount so both tabs start with prompts
   useEffect(() => {
-    generatePrompts()
+    generatePrompts(null)
   }, [])
 
-  const generatePrompts = async () => {
+  // Explicit generation targets the open tab; null asks for a mix of both tasks
+  const generatePrompts = async (taskType: string | null = activeTab) => {
     setIsLoading(true)
     try {
       const response = await authFetch("/api/ai/generate-prompts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          taskType: activeTab === "all" ? null : activeTab,
+          taskType,
           topics: selectedTopics.length > 0 ? selectedTopics : availableTopics,
           categories: selectedCategories,
           count: 6,
@@ -74,7 +75,7 @@ export function PromptsLibrary() {
   }
 
   const filteredPrompts = prompts.filter((prompt) => {
-    const matchesType = activeTab === "all" || prompt.type === activeTab
+    const matchesType = prompt.type === activeTab
     const matchesTopics =
       selectedTopics.length === 0 || selectedTopics.some((topic) => tagsIncludeTopic(prompt.tags, topic))
     const matchesCategory =
@@ -102,7 +103,7 @@ export function PromptsLibrary() {
     setSelectedCategories([])
   }
 
-  const visibleCategoryGroups = CATEGORY_GROUPS.filter((g) => activeTab === "all" || g.task === activeTab)
+  const visibleCategoryGroups = CATEGORY_GROUPS.filter((g) => g.task === activeTab)
 
   const handleUsePrompt = (prompt: Prompt) => {
     // Store the prompt in sessionStorage for use in the new task page
@@ -121,7 +122,6 @@ export function PromptsLibrary() {
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6" id="prompt-tabs" data-toc-title="Prompt Tabs">
         <TabsList>
-          <TabsTrigger value="all">All Prompts</TabsTrigger>
           <TabsTrigger value="Task 1">Task 1</TabsTrigger>
           <TabsTrigger value="Task 2">Task 2</TabsTrigger>
         </TabsList>
@@ -143,7 +143,7 @@ export function PromptsLibrary() {
               <X className="h-4 w-4" />
               Clear options
             </Button>
-            <Button onClick={generatePrompts} disabled={isLoading} size="sm" className="gap-2">
+            <Button onClick={() => generatePrompts()} disabled={isLoading} size="sm" className="gap-2">
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -225,7 +225,7 @@ export function PromptsLibrary() {
         <Card className="rounded-2xl border-border bg-card">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground mb-4">No prompts match your filters.</p>
-            <Button onClick={generatePrompts} className="gap-2">
+            <Button onClick={() => generatePrompts()} className="gap-2">
               <Sparkles className="h-4 w-4" />
               Generate Prompts
             </Button>
