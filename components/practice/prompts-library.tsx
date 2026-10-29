@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,23 +35,22 @@ export function PromptsLibrary() {
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // Generate a Task 1 + Task 2 mix on mount so both tabs start with prompts
-  useEffect(() => {
-    generatePrompts(null)
-    // Runs once on mount by design; later generations are triggered by the user
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Nothing is generated until the learner has picked what they want to practise
+  const missingChoice =
+    selectedTopics.length === 0 ? "topic" : selectedCategories.length === 0 ? "category" : null
+  const canGenerate = missingChoice === null && !isLoading
 
-  // Explicit generation targets the open tab; null asks for a mix of both tasks
-  const generatePrompts = async (taskType: string | null = activeTab) => {
+  // Generates for the open tab, from the chosen topics and question types only
+  const generatePrompts = async () => {
+    if (missingChoice) return
     setIsLoading(true)
     try {
       const response = await authFetch("/api/ai/generate-prompts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          taskType,
-          topics: selectedTopics.length > 0 ? selectedTopics : availableTopics,
+          taskType: activeTab,
+          topics: selectedTopics,
           categories: selectedCategories,
           count: 6,
         }),
@@ -151,7 +150,7 @@ export function PromptsLibrary() {
               <X className="h-4 w-4" />
               Clear options
             </Button>
-            <Button onClick={() => generatePrompts()} disabled={isLoading} size="sm" className="gap-2">
+            <Button onClick={generatePrompts} disabled={!canGenerate} size="sm" className="gap-2">
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -182,7 +181,7 @@ export function PromptsLibrary() {
           </div>
           <p className="text-sm text-muted-foreground mt-3">
             {selectedTopics.length === 0
-              ? "All topics selected by default. Click to filter specific topics."
+              ? "Step 1: pick at least one topic."
               : `${selectedTopics.length} topic(s) selected`}
           </p>
 
@@ -211,7 +210,7 @@ export function PromptsLibrary() {
             </div>
             <p className="text-sm text-muted-foreground mt-3">
               {selectedCategories.length === 0
-                ? "All question types allowed by default. Click to focus on specific types."
+                ? "Step 2: pick at least one question type."
                 : `${selectedCategories.length} categor${selectedCategories.length === 1 ? "y" : "ies"} selected`}
             </p>
           </div>
@@ -232,8 +231,16 @@ export function PromptsLibrary() {
       {!isLoading && filteredPrompts.length === 0 && (
         <Card className="rounded-2xl border-border bg-card">
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">No prompts match your filters.</p>
-            <Button onClick={() => generatePrompts()} className="gap-2">
+            <p className="text-muted-foreground mb-4">
+              {missingChoice === "topic"
+                ? "Pick at least one topic, then at least one question type, and press Generate."
+                : missingChoice === "category"
+                  ? "Now pick at least one question type, then press Generate."
+                  : prompts.length === 0
+                    ? "Ready. Press Generate to create prompts for your choices."
+                    : "No prompts match your filters."}
+            </p>
+            <Button onClick={generatePrompts} disabled={!canGenerate} className="gap-2">
               <Sparkles className="h-4 w-4" />
               Generate Prompts
             </Button>
