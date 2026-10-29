@@ -38,7 +38,7 @@ export function TopNav() {
       title: "Success",
       description: "You have been signed out.",
     })
-    router.push("/")
+    router.replace("/")
   }
 
   return (
