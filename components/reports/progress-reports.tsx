@@ -332,9 +332,9 @@ export function ProgressReports({ userId: propUserId }: ProgressReportsProps = {
                         onClick={() => handleIssueClick(item)}
                         className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 hover:bg-muted/50 hover:border-primary/30 transition-all cursor-pointer text-left group"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <AlertCircle className="h-4 w-4 text-warning" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-warning" />
                             <p className="text-sm font-medium">{item.name}</p>
                             {item.relatedCriterion && (
                               <Badge variant="outline" className="text-xs">
@@ -344,7 +344,7 @@ export function ProgressReports({ userId: propUserId }: ProgressReportsProps = {
                           </div>
                           <p className="text-xs text-muted-foreground">Occurred {item.count} times</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-2">
                           {item.trend === "Improving" ? (
                             <>
                               <TrendingDown className="h-4 w-4 text-success" />

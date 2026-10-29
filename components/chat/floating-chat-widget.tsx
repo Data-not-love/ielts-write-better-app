@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,6 +17,7 @@ import { Markdown } from "@/components/ui/markdown"
 
 export function FloatingChatWidget() {
   const { user } = useAuth()
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [isEssaysOpen, setIsEssaysOpen] = useState(false)
   const {
@@ -40,6 +42,9 @@ export function FloatingChatWidget() {
     handleKeyDown,
   } = useChatSession({ active: isOpen })
 
+  // The chat page already is the full chat; a second launcher there only covers its input
+  if (pathname === "/chat") return null
+
   return (
     <>
       {/* Floating Chat Button */}
@@ -47,7 +52,7 @@ export function FloatingChatWidget() {
         onClick={() => setIsOpen(!isOpen)}
         size="icon-lg"
         className={cn(
-          "fixed bottom-6 right-6 z-50 rounded-full shadow-md transition-colors",
+          "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 rounded-full shadow-md transition-colors",
           isOpen && "hidden"
         )}
         aria-label="Open chat"
@@ -57,7 +62,7 @@ export function FloatingChatWidget() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[450px] shadow-2xl rounded-lg border bg-background">
+        <div className="fixed inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-6 sm:right-6 z-50 sm:w-[450px] max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain shadow-2xl rounded-lg border bg-background">
           <Card className="rounded-lg border-0 shadow-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-lg">AI Writing Assistant</CardTitle>

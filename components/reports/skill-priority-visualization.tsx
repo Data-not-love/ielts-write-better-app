@@ -88,8 +88,8 @@ export function SkillPriorityVisualization({
 
             return (
               <div key={skill} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     {getPriorityIcon(skillData.priority)}
                     <span className="text-sm font-medium">
                       {CRITERIA_NAMES[skill]}

@@ -35,7 +35,7 @@ export function PageWithTOC({ children, className }: PageWithTOCProps) {
         className={cn(
           "transition-all duration-300",
           // Add left margin when TOC is expanded, smaller margin when collapsed
-          isTOCCollapsed ? "ml-0 md:ml-16" : "ml-0 md:ml-72",
+          isTOCCollapsed ? "ml-0 lg:ml-16" : "ml-0 lg:ml-72",
           className
         )}
       >

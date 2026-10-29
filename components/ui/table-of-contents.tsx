@@ -229,7 +229,8 @@ export function TableOfContents({
     <div
       data-toc-container
       className={cn(
-        "fixed top-[7.5rem] left-4 z-30 transition-all duration-300",
+        // Desktop only: on narrower screens a fixed side panel would sit on top of the content
+        "fixed top-[7.5rem] left-4 z-30 hidden lg:block transition-all duration-300",
         isCollapsed ? "w-12" : "w-64",
         isHidden && "opacity-0 pointer-events-none",
         className

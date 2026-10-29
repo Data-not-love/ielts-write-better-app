@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Facebook, Instagram, Youtube } from "lucide-react"
 import { useState } from "react"
 
 const quickLinks = [
@@ -54,46 +53,6 @@ export function Footer() {
                 <a href="mailto:cuongtd.23ai@vku.udn.vn" className={linkClass}>cuongtd.23ai@vku.udn.vn</a>
               </dd>
             </dl>
-            <div className="flex items-center gap-4 pt-1">
-              <a
-                href="https://www.facebook.com/nguyen.vinh.sanh.2024"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClass}
-                aria-label="Facebook"
-              >
-                <Facebook className="h-4 w-4" />
-              </a>
-              <a
-                href="https://www.instagram.com/nguyenvinhsanh23?igsh=cmphcjJxeXVsYzNo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClass}
-                aria-label="Instagram"
-              >
-                <Instagram className="h-4 w-4" />
-              </a>
-              <a
-                href="https://www.tiktok.com/@userd7j3e9nkww?_r=1&_t=ZS-91fTsO5Py6f"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClass}
-                aria-label="TikTok"
-              >
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
-                </svg>
-              </a>
-              <a
-                href="https://www.youtube.com/@vinhsanh869"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClass}
-                aria-label="YouTube"
-              >
-                <Youtube className="h-4 w-4" />
-              </a>
-            </div>
           </div>
 
           {/* Quick links */}

@@ -272,18 +272,18 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
         <Link href="/tasks">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Back to tasks">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{task.title || `${task.taskType ?? "Task"} Submission`}</h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold break-words">{task.title || `${task.taskType ?? "Task"} Submission`}</h1>
           <p className="text-sm text-muted-foreground">{task.taskType || "IELTS Writing"}</p>
         </div>
-        <Link href={`/tasks/${taskId}/compare`}>
-          <Button variant="outline" className="bg-transparent">
+        <Link href={`/tasks/${taskId}/compare`} className="w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto bg-transparent">
             <GitCompare className="mr-2 h-4 w-4" />
             Compare Versions
           </Button>
@@ -295,7 +295,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         <div className="lg:col-span-2 space-y-6">
           <Card className="rounded-2xl border-border bg-card">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>Your Response</CardTitle>
                 <div className="flex gap-2">
                   {!isEditing && (

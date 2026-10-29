@@ -18,8 +18,9 @@ export function SecondaryNav() {
 
   return (
     <nav className="border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 sticky top-16 z-40">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center gap-1 overflow-x-auto">
+      <div className="container mx-auto px-2 sm:px-4">
+        {/* Phones: five equal tabs with the icon above a small label, so all fit without scrolling */}
+        <div className="flex items-center sm:gap-1 overflow-x-auto">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -28,8 +29,9 @@ export function SecondaryNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap border-b-2",
+                  "flex flex-1 sm:flex-none flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 sm:px-4 py-1.5 sm:py-3 text-[11px] sm:text-sm font-medium transition-colors whitespace-nowrap border-b-2",
                   isActive
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted",

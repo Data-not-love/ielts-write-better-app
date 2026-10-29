@@ -33,8 +33,8 @@ export function PracticeNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="border-b border-border bg-muted/50 sticky top-[8rem] z-30">
-      <div className="transition-[margin] duration-300 md:[[data-toc=collapsed]_&]:ml-16 md:[[data-toc=expanded]_&]:ml-72">
+    <nav className="border-b border-border bg-muted/50 sticky top-[115px] sm:top-[112px] z-30">
+      <div className="transition-[margin] duration-300 lg:[[data-toc=collapsed]_&]:ml-16 lg:[[data-toc=expanded]_&]:ml-72">
       <div className="container mx-auto px-4">
         <div className="flex items-center gap-2 overflow-x-auto py-2 scrollbar-hide">
           {practiceNavItems.map((item) => {

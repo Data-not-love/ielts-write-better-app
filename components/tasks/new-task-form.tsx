@@ -342,7 +342,7 @@ export function NewTaskForm() {
               {wordCount < minWords && <span className="text-muted-foreground">Keep writing...</span>}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
               <Button
                 variant="outline"
                 onClick={handleSaveDraft}

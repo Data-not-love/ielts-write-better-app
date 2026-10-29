@@ -140,7 +140,7 @@ export function PromptsLibrary() {
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-base">Select Topics</CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={clearOptions}
               disabled={selectedTopics.length === 0 && selectedCategories.length === 0}

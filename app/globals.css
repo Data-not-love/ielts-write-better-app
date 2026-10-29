@@ -233,6 +233,12 @@
   ::selection {
     background: color-mix(in oklch, var(--primary) 18%, transparent);
   }
+  /* A bare `grid` gets an auto column sized to its widest unbreakable content
+     (a truncated title, a chart), which pushed phones into horizontal scroll.
+     Default to one shrinkable column; grid-cols-* utilities still override. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

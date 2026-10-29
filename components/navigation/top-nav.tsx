@@ -60,7 +60,8 @@ export function TopNav() {
             <div className="h-8 w-20 bg-muted animate-pulse rounded" />
           ) : user ? (
             <>
-              <Link href="/dashboard">
+              {/* Phones reach the dashboard from the tab bar below */}
+              <Link href="/dashboard" className="hidden sm:block">
                 <Button variant="ghost" size="sm">
                   Dashboard
                 </Button>

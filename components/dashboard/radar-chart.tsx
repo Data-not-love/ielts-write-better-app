@@ -66,15 +66,15 @@ export function RadarChart({ scores, isLoading }: RadarChartProps) {
     )
   }
 
-  // Create data with each criterion as a separate point
+  // Axis ticks use the short codes so they fit on a phone; the legend carries the full names
   const data = CRITERIA_ORDER.map((criterion) => ({
-    criteria: CRITERIA_FULL_NAMES[criterion],
+    criteria: criterion,
     [criterion]: scores?.[criterion] ?? 0,
   }))
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <RechartsRadar data={data}>
+      <RechartsRadar data={data} outerRadius="70%">
         {/* Grid with light gray color */}
         <PolarGrid stroke="#E5E7EB" strokeWidth={1} />
         
